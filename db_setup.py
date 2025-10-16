@@ -1,6 +1,8 @@
 import sqlite3
 
-conn = sqlite3.connect("photo_ai.db")
+DB_PATH = "photo_ai.db"
+
+conn = sqlite3.connect(DB_PATH)
 cursor = conn.cursor()
 
 # PHOTOS
