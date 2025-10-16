@@ -83,7 +83,7 @@ def choose_folder():
     if folder:
         selected_folder.set(folder)
         input_folder = Path(folder)
-        get_photo_metadata(input_folder)
+        get_photos_metadata(input_folder)
 
 
 def get_photos_metadata(input_folder):
