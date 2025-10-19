@@ -6,9 +6,9 @@ import exifread
 from geopy.geocoders import Nominatim
 from PIL import Image
 
-# DB
-conn = sqlite3.connect("photo_ai.db")
-cursor = conn.cursor()
+from db_setup import Database
+
+db = Database()
 
 # geolocator
 geolocator = Nominatim(user_agent="photo_sorter")
@@ -95,10 +95,14 @@ def get_photos_metadata(input_folder):
             location_data = get_photo_location(path)
             width, height = get_photo_size(path)
 
-            cursor.execute("""
-            INSERT INTO photos (path, filename, location_data, time_data, width, height)
-            VALUES (?, ?, ?, ?, ?, ?)
-            """, (path_str, filename, location_data, time_data, width, height))
+            db.insert_photo(
+                path=path_str,
+                filename=filename,
+                location_data=location_data,
+                time_data=time_data,
+                width=width,
+                height=height
+            )
 
 
 ctk.CTkButton(app, text="Select folder", command=choose_folder).pack(pady=40)
@@ -106,5 +110,4 @@ ctk.CTkLabel(app, textvariable=selected_folder, text_color="lightblue").pack()
 
 app.mainloop()
 
-conn.commit()
-conn.close()
+db.close()
