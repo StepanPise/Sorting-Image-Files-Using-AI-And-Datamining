@@ -1,73 +1,13 @@
-import sqlite3
 from pathlib import Path
 import customtkinter as ctk
 from tkinter import filedialog
-import exifread
-from geopy.geocoders import Nominatim
-from PIL import Image
 
 from db_setup import Database
+from metadata_handle import PhotoMetadata
+import face_recognition
 
 db = Database()
 
-# geolocator
-geolocator = Nominatim(user_agent="photo_sorter")
-
-# --- Metadata functions ---
-
-
-def get_photo_date(img_path):
-    with open(img_path, 'rb') as f:
-        tags = exifread.process_file(
-            f, stop_tag="EXIF DateTimeOriginal", details=False)
-    date_tag = tags.get("EXIF DateTimeOriginal")
-    return str(date_tag) if date_tag else None
-
-
-def get_photo_location(img_path):
-    with open(img_path, 'rb') as f:
-        tags = exifread.process_file(f, details=False)
-
-    gps_lat = tags.get("GPS GPSLatitude")
-    gps_lat_ref = tags.get("GPS GPSLatitudeRef")
-    gps_lon = tags.get("GPS GPSLongitude")
-    gps_lon_ref = tags.get("GPS GPSLongitudeRef")
-
-    if not (gps_lat and gps_lat_ref and gps_lon and gps_lon_ref):
-        return None
-
-    def convert_to_degrees(value):
-        d, m, s = [float(x.num)/float(x.den) for x in value.values]
-        return d + m/60 + s/3600
-
-    lat = convert_to_degrees(gps_lat)
-    lon = convert_to_degrees(gps_lon)
-    if gps_lat_ref.values[0] != 'N':
-        lat = -lat
-    if gps_lon_ref.values[0] != 'E':
-        lon = -lon
-
-    try:
-        location = geolocator.reverse((lat, lon), language="cs")
-        if location and location.raw.get("address"):
-            city = location.raw["address"].get("city") or \
-                location.raw["address"].get("town") or \
-                location.raw["address"].get("village")
-            return city
-        return None
-    except:
-        return None
-
-
-def get_photo_size(img_path):
-    try:
-        with Image.open(img_path) as img:
-            return img.width, img.height
-    except:
-        return None, None
-
-
-# --- GUI setup ---
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
@@ -85,15 +25,41 @@ def choose_folder():
         input_folder = Path(folder)
         get_photos_metadata(input_folder)
 
+        # presunout do vlastni classy/metody
+        for img_path in input_folder.iterdir():
+            if img_path.is_file() and img_path.suffix.lower() in [".jpg", ".jpeg", ".png"]:
+                try:
+                    image = face_recognition.load_image_file(img_path)
+                    locations = face_recognition.face_locations(  # proved detekci obliceju na fotce
+                        image, model="hog")
+                    print(f"{img_path.name}: Face found:", locations)
 
-def get_photos_metadata(input_folder):
+                    if locations:
+                        row = db.cursor.execute("SELECT id FROM photos WHERE filename = ?", (
+                            img_path.name,)).fetchone()  # Beru si id fotky z db
+                        if row:
+                            photo_id = row[0]
+                            # pro kazdy oblicej vytvor embedding
+                            face_encodings = face_recognition.face_encodings(
+                                image, locations)
+                            # vloz do db v bitstream formatu
+                            for encoding in face_encodings:
+                                db.insert_face(
+                                    photo_id, encoding.tobytes(), None)
+                except Exception as e:
+                    print(
+                        f"Error -> Image couldnt be analyzed: {img_path.name}: {e}")
+
+
+def get_photos_metadata(input_folder: Path):
     for path in input_folder.iterdir():
         if path.is_file() and path.suffix.lower() in [".jpg", ".jpeg", ".png"]:
             filename = path.name
             path_str = str(path)
-            time_data = get_photo_date(path)
-            location_data = get_photo_location(path)
-            width, height = get_photo_size(path)
+
+            time_data = PhotoMetadata.get_date(path)
+            location_data = PhotoMetadata.get_location(path)
+            width, height = PhotoMetadata.get_size(path)
 
             db.insert_photo(
                 path=path_str,
@@ -108,6 +74,6 @@ def get_photos_metadata(input_folder):
 ctk.CTkButton(app, text="Select folder", command=choose_folder).pack(pady=40)
 ctk.CTkLabel(app, textvariable=selected_folder, text_color="lightblue").pack()
 
-app.mainloop()
-
-db.close()
+if __name__ == "__main__":
+    app.mainloop()
+    db.close()

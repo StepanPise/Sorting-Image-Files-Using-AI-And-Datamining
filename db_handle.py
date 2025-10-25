@@ -3,9 +3,7 @@ import sqlite3
 conn = sqlite3.connect("photo_ai.db")
 cursor = conn.cursor()
 
-
-cursor.execute("SELECT * FROM photos")
-
+cursor.execute("SELECT * FROM faces")
 
 rows = cursor.fetchall()
 
