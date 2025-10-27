@@ -10,6 +10,9 @@ import numpy as np
 from sklearn.cluster import DBSCAN
 import cv2
 
+import hashlib
+
+
 db = Database()
 
 ctk.set_appearance_mode("dark")
@@ -41,9 +44,10 @@ def get_photos_metadata(input_folder: Path):
         if path.is_file() and path.suffix.lower() in [".jpg", ".jpeg", ".png"]:
             filename = path.name
             path_str = str(path)
+            hash = compute_hash(path)
 
             exists = db.cursor.execute(
-                "SELECT 1 FROM photos WHERE filename = ?", (filename,)
+                "SELECT 1 FROM photos WHERE hash = ?", (hash,)
             ).fetchone()
 
             if exists:
@@ -56,6 +60,7 @@ def get_photos_metadata(input_folder: Path):
             db.insert_photo(
                 path=path_str,
                 filename=filename,
+                hash=hash,
                 location_data=location_data,
                 time_data=time_data,
                 width=width,
@@ -67,18 +72,18 @@ def process_faces(input_folder: Path):
     for img_path in input_folder.iterdir():
         if img_path.is_file() and img_path.suffix.lower() in [".jpg", ".jpeg", ".png"]:
 
+            file_hash = compute_hash(img_path)
+
             row = db.cursor.execute(
-                "SELECT id FROM photos WHERE filename = ?", (img_path.name,)
+                "SELECT id, already_analyzed FROM photos WHERE hash = ?", (
+                    file_hash,)
             ).fetchone()
             if not row:
                 continue
 
-            photo_id = row[0]
+            photo_id, already_analyzed = row
 
-            already_processed = db.cursor.execute(
-                "SELECT 1 FROM faces WHERE photo_id = ?", (photo_id,)
-            ).fetchone()
-            if already_processed:
+            if already_analyzed:
                 continue
 
             try:
@@ -100,17 +105,17 @@ def process_faces(input_folder: Path):
                 print(f"{img_path.name}: Face found:", face_locations)
 
                 if face_locations:
-                    row = db.cursor.execute("SELECT id FROM photos WHERE filename = ?", (
-                        img_path.name,)).fetchone()
-                    if row:
-                        photo_id = row[0]
-                        # create embeddings for each face
-                        face_encodings = face_recognition.face_encodings(
-                            image, face_locations)
-                        # make it bitstream
-                        for encoding in face_encodings:
-                            db.insert_face(
-                                photo_id, encoding.tobytes(), None)
+                    face_encodings = face_recognition.face_encodings(
+                        image, face_locations)
+                    for encoding in face_encodings:
+                        db.insert_face(photo_id, encoding.tobytes(), None)
+
+                db.cursor.execute(
+                    "UPDATE photos SET already_analyzed = 1 WHERE id = ?", (
+                        photo_id,)
+                )
+                db.conn.commit()
+
             except Exception as e:
                 print(
                     f"Error -> Image couldnt be analyzed: {img_path.name}: {e}")
@@ -179,6 +184,15 @@ ctk.CTkLabel(app, textvariable=selected_folder, text_color="lightblue").pack()
 
 scroll_frame = ctk.CTkScrollableFrame(app, label_text="Detected people")
 scroll_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+
+def compute_hash(path: Path) -> str:
+    BUF_SIZE = 65536  # 64KB
+    sha256 = hashlib.sha256()
+    with open(path, "rb") as f:
+        while chunk := f.read(BUF_SIZE):
+            sha256.update(chunk)
+    return sha256.hexdigest()
 
 
 if __name__ == "__main__":

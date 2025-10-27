@@ -18,6 +18,8 @@ class Database:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             path TEXT NOT NULL,
             filename TEXT NOT NULL,
+            hash TEXT UNIQUE NOT NULL,
+            already_analyzed INTEGER DEFAULT 0,
             location_data TEXT,
             time_data TEXT,
             width INTEGER,
@@ -65,13 +67,17 @@ class Database:
     # -------------------------
     # PHOTOS
     # -------------------------
-    def insert_photo(self, path: str, filename: str, location_data: Optional[str] = None,
-                     time_data: Optional[str] = None, width: Optional[int] = None,
+
+    def insert_photo(self, path: str, filename: str, hash: str,
+                     already_analyzed: int = 0,
+                     location_data: Optional[str] = None,
+                     time_data: Optional[str] = None,
+                     width: Optional[int] = None,
                      height: Optional[int] = None) -> int:
         self.cursor.execute("""
-        INSERT INTO photos (path, filename, location_data, time_data, width, height)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """, (path, filename, location_data, time_data, width, height))
+        INSERT INTO photos (path, filename, hash, already_analyzed, location_data, time_data, width, height)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (path, filename, hash, already_analyzed, location_data, time_data, width, height))
         self.conn.commit()
         return self.cursor.lastrowid
 
@@ -83,9 +89,15 @@ class Database:
         self.cursor.execute("DELETE FROM photos WHERE id = ?", (photo_id,))
         self.conn.commit()
 
+    def update_photo(self, photo_id: int, column: str, value):
+        query = f"UPDATE photos SET {column} = ? WHERE id = ?"
+        self.cursor.execute(query, (value, photo_id))
+        self.conn.commit()
+
     # -------------------------
     # TAGS
     # -------------------------
+
     def insert_tag(self, name: str) -> int:
         self.cursor.execute("INSERT INTO tags (name) VALUES (?)", (name,))
         self.conn.commit()
