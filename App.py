@@ -31,8 +31,9 @@ def choose_folder():
         get_photos_metadata(input_folder)
 
         process_faces(input_folder)
-
         assign_person_ids()
+
+        print_person_groups()
 
 
 def get_photos_metadata(input_folder: Path):
@@ -40,6 +41,13 @@ def get_photos_metadata(input_folder: Path):
         if path.is_file() and path.suffix.lower() in [".jpg", ".jpeg", ".png"]:
             filename = path.name
             path_str = str(path)
+
+            exists = db.cursor.execute(
+                "SELECT 1 FROM photos WHERE filename = ?", (filename,)
+            ).fetchone()
+
+            if exists:
+                continue
 
             time_data = PhotoMetadata.get_date(path)
             location_data = PhotoMetadata.get_location(path)
@@ -66,6 +74,12 @@ def process_faces(input_folder: Path):
                 continue
 
             photo_id = row[0]
+
+            already_processed = db.cursor.execute(
+                "SELECT 1 FROM faces WHERE photo_id = ?", (photo_id,)
+            ).fetchone()
+            if already_processed:
+                continue
 
             try:
                 image = face_recognition.load_image_file(img_path)
@@ -141,6 +155,23 @@ def assign_person_ids():
     db.conn.commit()
     print(
         f"Assigned person_id to {len(face_ids)} faces and created {len(unique_labels)} people.")
+
+
+# for debugging purposes
+
+def print_person_groups():
+    rows = db.cursor.execute(
+        "SELECT id, photo_id, person_id FROM faces").fetchall()
+
+    from collections import defaultdict
+    groups = defaultdict(list)
+
+    for face_id, photo_id, person_id in rows:
+        groups[person_id].append(photo_id)
+
+    for person_id, photos in groups.items():
+        unique_photos = list(set(photos))
+        print(f"Person {person_id} appears in photos: {unique_photos}")
 
 
 ctk.CTkButton(app, text="Select folder", command=choose_folder).pack(pady=40)
