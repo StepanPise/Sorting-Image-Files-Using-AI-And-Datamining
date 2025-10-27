@@ -42,20 +42,25 @@ def choose_folder():
 def get_photos_metadata(input_folder: Path):
     for path in input_folder.iterdir():
         if path.is_file() and path.suffix.lower() in [".jpg", ".jpeg", ".png"]:
+
             filename = path.name
             path_str = str(path)
             hash = compute_hash(path)
+            time_data = PhotoMetadata.get_date(path)
+            location_data = PhotoMetadata.get_location(path)
+            width, height = PhotoMetadata.get_size(path)
 
             exists = db.cursor.execute(
                 "SELECT 1 FROM photos WHERE hash = ?", (hash,)
             ).fetchone()
 
             if exists:
+                db.update_photo(
+                    photo_id=exists[0],
+                    path=path_str,
+                    filename=filename,
+                )
                 continue
-
-            time_data = PhotoMetadata.get_date(path)
-            location_data = PhotoMetadata.get_location(path)
-            width, height = PhotoMetadata.get_size(path)
 
             db.insert_photo(
                 path=path_str,
@@ -162,9 +167,8 @@ def assign_person_ids():
         f"Assigned person_id to {len(face_ids)} faces and created {len(unique_labels)} people.")
 
 
-# for debugging purposes
+def print_person_groups():  # for debugging purposes
 
-def print_person_groups():
     rows = db.cursor.execute(
         "SELECT id, photo_id, person_id FROM faces").fetchall()
 
@@ -186,6 +190,7 @@ scroll_frame = ctk.CTkScrollableFrame(app, label_text="Detected people")
 scroll_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
 
+# Hash verification prevents processing the same image even if its in diff folder
 def compute_hash(path: Path) -> str:
     BUF_SIZE = 65536  # 64KB
     sha256 = hashlib.sha256()

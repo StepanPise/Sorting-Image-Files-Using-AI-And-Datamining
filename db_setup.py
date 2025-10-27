@@ -89,9 +89,19 @@ class Database:
         self.cursor.execute("DELETE FROM photos WHERE id = ?", (photo_id,))
         self.conn.commit()
 
-    def update_photo(self, photo_id: int, column: str, value):
-        query = f"UPDATE photos SET {column} = ? WHERE id = ?"
-        self.cursor.execute(query, (value, photo_id))
+    def update_photo(self, photo_id: int, **kwargs):
+        """
+        kwargs: column name = new value
+        """
+        if not kwargs:
+            return
+
+        columns = ", ".join(f"{col} = ?" for col in kwargs)
+        values = list(kwargs.values())
+        values.append(photo_id)  # pro WHERE id = ?
+
+        query = f"UPDATE photos SET {columns} WHERE id = ?"
+        self.cursor.execute(query, values)
         self.conn.commit()
 
     # -------------------------
