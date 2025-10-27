@@ -6,13 +6,17 @@ from db_setup import Database
 from metadata_handle import PhotoMetadata
 import face_recognition
 
+import numpy as np
+from sklearn.cluster import DBSCAN
+import cv2
+
 db = Database()
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
 app = ctk.CTk()
-app.geometry("400x200")
+app.geometry("400x400")
 app.title("Select Directory")
 
 selected_folder = ctk.StringVar()
@@ -23,32 +27,12 @@ def choose_folder():
     if folder:
         selected_folder.set(folder)
         input_folder = Path(folder)
+
         get_photos_metadata(input_folder)
 
-        # presunout do vlastni classy/metody
-        for img_path in input_folder.iterdir():
-            if img_path.is_file() and img_path.suffix.lower() in [".jpg", ".jpeg", ".png"]:
-                try:
-                    image = face_recognition.load_image_file(img_path)
-                    locations = face_recognition.face_locations(  # proved detekci obliceju na fotce
-                        image, model="hog")
-                    print(f"{img_path.name}: Face found:", locations)
+        process_faces(input_folder)
 
-                    if locations:
-                        row = db.cursor.execute("SELECT id FROM photos WHERE filename = ?", (
-                            img_path.name,)).fetchone()  # Beru si id fotky z db
-                        if row:
-                            photo_id = row[0]
-                            # pro kazdy oblicej vytvor embedding
-                            face_encodings = face_recognition.face_encodings(
-                                image, locations)
-                            # vloz do db v bitstream formatu
-                            for encoding in face_encodings:
-                                db.insert_face(
-                                    photo_id, encoding.tobytes(), None)
-                except Exception as e:
-                    print(
-                        f"Error -> Image couldnt be analyzed: {img_path.name}: {e}")
+        assign_person_ids()
 
 
 def get_photos_metadata(input_folder: Path):
@@ -71,8 +55,100 @@ def get_photos_metadata(input_folder: Path):
             )
 
 
+def process_faces(input_folder: Path):
+    for img_path in input_folder.iterdir():
+        if img_path.is_file() and img_path.suffix.lower() in [".jpg", ".jpeg", ".png"]:
+
+            row = db.cursor.execute(
+                "SELECT id FROM photos WHERE filename = ?", (img_path.name,)
+            ).fetchone()
+            if not row:
+                continue
+
+            photo_id = row[0]
+
+            try:
+                image = face_recognition.load_image_file(img_path)
+
+                scale = 0.25
+                small_img = cv2.resize(image, (0, 0), fx=scale, fy=scale)
+
+                face_locations = face_recognition.face_locations(
+                    small_img, model="hog")
+
+                # Scale back up face locations
+                face_locations = [
+                    [int(top / scale), int(right / scale),
+                     int(bottom / scale), int(left / scale)]
+                    for top, right, bottom, left in face_locations
+                ]
+
+                print(f"{img_path.name}: Face found:", face_locations)
+
+                if face_locations:
+                    row = db.cursor.execute("SELECT id FROM photos WHERE filename = ?", (
+                        img_path.name,)).fetchone()
+                    if row:
+                        photo_id = row[0]
+                        # create embeddings for each face
+                        face_encodings = face_recognition.face_encodings(
+                            image, face_locations)
+                        # make it bitstream
+                        for encoding in face_encodings:
+                            db.insert_face(
+                                photo_id, encoding.tobytes(), None)
+            except Exception as e:
+                print(
+                    f"Error -> Image couldnt be analyzed: {img_path.name}: {e}")
+
+
+def assign_person_ids():
+    rows = db.cursor.execute("SELECT id, embedding FROM faces").fetchall()
+    if not rows:
+        print("No faces in database.")
+        return
+
+    face_ids = []
+    embeddings = []
+
+    for row in rows:
+        face_id = row[0]
+        embedding_bytes = row[1]
+        embedding = np.frombuffer(embedding_bytes, dtype=np.float64)
+        face_ids.append(face_id)
+        embeddings.append(embedding)
+
+    embeddings_array = np.array(embeddings)
+    clustering = DBSCAN(metric='euclidean', eps=0.5,
+                        min_samples=1).fit(embeddings_array)
+
+    unique_labels = np.unique(clustering.labels_)
+
+    label_to_person_id = {}
+
+    for label in unique_labels:
+        db.cursor.execute(
+            "INSERT INTO people (name) VALUES (?)", (f"Person{label}",))
+        person_id = db.cursor.lastrowid
+        label_to_person_id[label] = person_id
+
+    for face_id, label in zip(face_ids, clustering.labels_):
+        person_id = label_to_person_id[label]
+        db.cursor.execute(
+            "UPDATE faces SET person_id = ? WHERE id = ?", (person_id, face_id)
+        )
+
+    db.conn.commit()
+    print(
+        f"Assigned person_id to {len(face_ids)} faces and created {len(unique_labels)} people.")
+
+
 ctk.CTkButton(app, text="Select folder", command=choose_folder).pack(pady=40)
 ctk.CTkLabel(app, textvariable=selected_folder, text_color="lightblue").pack()
+
+scroll_frame = ctk.CTkScrollableFrame(app, label_text="Detected people")
+scroll_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
 
 if __name__ == "__main__":
     app.mainloop()
