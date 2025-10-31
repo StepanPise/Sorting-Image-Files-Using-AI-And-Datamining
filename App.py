@@ -51,7 +51,7 @@ def get_photos_metadata(input_folder: Path):
             width, height = PhotoMetadata.get_size(path)
 
             exists = db.cursor.execute(
-                "SELECT 1 FROM photos WHERE hash = ?", (hash,)
+                "SELECT id FROM photos WHERE hash = ?", (hash,)
             ).fetchone()
 
             if exists:
