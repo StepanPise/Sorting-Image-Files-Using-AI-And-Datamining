@@ -151,8 +151,7 @@ def assign_person_ids():
     label_to_person_id = {}
 
     for label in unique_labels:
-        db.cursor.execute(
-            "INSERT INTO people (name) VALUES (?)", (f"Person{label}",))
+        db.insert_person(f"Person{label}")
         person_id = db.cursor.lastrowid
         label_to_person_id[label] = person_id
 

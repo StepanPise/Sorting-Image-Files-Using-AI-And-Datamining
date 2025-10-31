@@ -1,6 +1,7 @@
 import sqlite3
 from sqlite3 import Connection, Cursor
 from typing import List, Tuple, Optional
+import numpy as np
 
 
 class Database:
@@ -46,7 +47,8 @@ class Database:
         self.cursor.execute("""
         CREATE TABLE IF NOT EXISTS people (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL
+            name TEXT NOT NULL,
+            avg_embedding BLOB
         )
         """)
 
@@ -124,8 +126,17 @@ class Database:
     # -------------------------
     # PEOPLE
     # -------------------------
-    def insert_person(self, name: str) -> int:
-        self.cursor.execute("INSERT INTO people (name) VALUES (?)", (name,))
+
+    def insert_person(self, name: str, avg_embedding: Optional[np.ndarray] = None) -> int:
+        if avg_embedding is not None:
+            avg_bytes = avg_embedding.tobytes()
+            self.cursor.execute(
+                "INSERT INTO people (name, avg_embedding) VALUES (?, ?)",
+                (name, avg_bytes)
+            )
+        else:
+            self.cursor.execute(
+                "INSERT INTO people (name) VALUES (?)", (name,))
         self.conn.commit()
         return self.cursor.lastrowid
 

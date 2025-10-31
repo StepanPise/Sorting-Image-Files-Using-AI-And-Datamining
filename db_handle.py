@@ -5,7 +5,7 @@ cursor = conn.cursor()
 
 # cursor.execute("SELECT id FROM faces")
 
-cursor.execute("SELECT filename FROM photos")
+cursor.execute("SELECT name FROM people")
 
 
 rows = cursor.fetchall()
