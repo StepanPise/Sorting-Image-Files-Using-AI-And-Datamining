@@ -128,8 +128,21 @@ class Database:
     # -------------------------
 
     def insert_person(self, name: str, avg_embedding: Optional[np.ndarray] = None) -> int:
+        self.cursor.execute("SELECT id FROM people WHERE name = ?", (name,))
+        existing = self.cursor.fetchone()
+
+        if existing:
+            return existing[0]
+
         if avg_embedding is not None:
-            avg_bytes = avg_embedding.tobytes()
+            if isinstance(avg_embedding, np.ndarray):
+                avg_bytes = avg_embedding.tobytes()
+            elif isinstance(avg_embedding, bytes):
+                avg_bytes = avg_embedding
+            else:
+                raise TypeError(
+                    f"Unsupported type for avg_embedding: {type(avg_embedding)}")
+
             self.cursor.execute(
                 "INSERT INTO people (name, avg_embedding) VALUES (?, ?)",
                 (name, avg_bytes)
@@ -137,6 +150,7 @@ class Database:
         else:
             self.cursor.execute(
                 "INSERT INTO people (name) VALUES (?)", (name,))
+
         self.conn.commit()
         return self.cursor.lastrowid
 
