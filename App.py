@@ -2,7 +2,7 @@ from pathlib import Path
 import customtkinter as ctk
 from tkinter import filedialog
 
-from db_setup import Database as db
+from db_setup import Database
 from metadata_handle import PhotoMetadata
 import face_recognition
 
@@ -13,6 +13,9 @@ import cv2
 import hashlib
 from face_clustering import assign_person_ids
 
+import PIL
+import io
+
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
@@ -21,6 +24,8 @@ app.geometry("400x400")
 app.title("Select Directory")
 
 selected_folder = ctk.StringVar()
+
+db = Database()
 
 
 def choose_folder():
@@ -32,7 +37,10 @@ def choose_folder():
         get_photos_metadata(input_folder)
 
         process_faces(input_folder)
+
         assign_person_ids()
+
+        show_detected_people()
 
         print_person_groups()
 
@@ -138,6 +146,10 @@ def print_person_groups():  # for debugging purposes
     for person_id, photos in groups.items():
         unique_photos = list(set(photos))
         print(f"Person {person_id} appears in photos: {unique_photos}")
+
+
+def show_detected_people():
+    pass
 
 
 ctk.CTkButton(app, text="Select folder", command=choose_folder).pack(pady=40)

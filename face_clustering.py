@@ -2,7 +2,9 @@
 
 import numpy as np
 from sklearn.cluster import DBSCAN
-from db_setup import Database as db
+from db_setup import Database
+
+db = Database()
 
 
 def assign_person_ids():
