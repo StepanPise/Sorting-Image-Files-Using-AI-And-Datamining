@@ -2,7 +2,7 @@ from pathlib import Path
 import customtkinter as ctk
 from tkinter import filedialog
 
-from db_setup import Database
+from db_setup import Database as db
 from metadata_handle import PhotoMetadata
 import face_recognition
 
@@ -11,9 +11,7 @@ from sklearn.cluster import DBSCAN
 import cv2
 
 import hashlib
-
-
-db = Database()
+from face_clustering import assign_person_ids
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -124,86 +122,6 @@ def process_faces(input_folder: Path):
             except Exception as e:
                 print(
                     f"Error -> Image couldnt be analyzed: {img_path.name}: {e}")
-
-
-def assign_person_ids():
-    rows = db.cursor.execute("SELECT id, embedding FROM faces").fetchall()
-    if not rows:
-        print("No faces in database.")
-        return
-
-    face_ids = []
-    embeddings = []
-
-    for row in rows:
-        face_id = row[0]
-        embedding_bytes = row[1]
-        embedding = np.frombuffer(embedding_bytes, dtype=np.float64)
-        face_ids.append(face_id)
-        embeddings.append(embedding)
-
-    embeddings_array = np.array(embeddings)  # make matrix
-    clustering = DBSCAN(metric='euclidean', eps=0.5,
-                        min_samples=1).fit(embeddings_array)
-    labels = clustering.labels_
-    unique_labels = np.unique(clustering.labels_)
-
-    # load existing people avg embeddings
-    people_rows = db.get_people()
-    people_avg_embeddings = {}
-    for person_id, name, avg_bytes in people_rows:
-        if avg_bytes:
-            people_avg_embeddings[person_id] = np.frombuffer(
-                avg_bytes, dtype=np.float64)
-        else:
-            people_avg_embeddings[person_id] = None
-
-    label_to_person_id = {}
-    next_person_index = len(people_rows)
-    for label in unique_labels:
-        cluster_indices = [i for i, l in enumerate(labels) if l == label]
-        cluster_embeddings = embeddings_array[cluster_indices]
-        cluster_avg = np.mean(cluster_embeddings, axis=0)
-
-        # match existing people
-        matched_person_id = None
-        for person_id, avg_emb in people_avg_embeddings.items():
-            if avg_emb is not None:
-                dist = np.linalg.norm(cluster_avg - avg_emb)
-                if dist < 0.5:
-                    matched_person_id = person_id
-                    break
-
-        if matched_person_id is not None:
-            person_id = matched_person_id
-            all_embeddings = np.vstack(
-                [cluster_embeddings, people_avg_embeddings[person_id].reshape(1, -1)])
-            new_avg = np.mean(all_embeddings, axis=0)
-            db.cursor.execute(
-                "UPDATE people SET avg_embedding = ? WHERE id = ?",
-                (new_avg.tobytes(), person_id)
-            )
-            people_avg_embeddings[person_id] = new_avg
-        else:
-            person_name = f"Person{next_person_index}"
-            avg_bytes = cluster_avg.tobytes() if cluster_avg is not None else None
-            db.insert_person(name=person_name, avg_embedding=avg_bytes)
-            person_id = db.cursor.lastrowid
-            people_avg_embeddings[person_id] = cluster_avg
-            next_person_index += 1
-
-        label_to_person_id[label] = person_id
-
-    # update face records with person_ids
-    for face_id, label in zip(face_ids, labels):
-        person_id = label_to_person_id[label]
-        db.cursor.execute(
-            "UPDATE faces SET person_id = ? WHERE id = ?", (person_id, face_id)
-        )
-
-    db.conn.commit()
-    print(
-        f"Assigned person_id to {len(face_ids)} faces and created {len(unique_labels)} people.")
 
 
 def print_person_groups():  # for debugging purposes
