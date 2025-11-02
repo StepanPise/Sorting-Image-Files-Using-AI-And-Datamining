@@ -13,7 +13,7 @@ import cv2
 import hashlib
 from face_clustering import assign_person_ids
 
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageOps
 import tkinter as tk
 
 ctk.set_appearance_mode("dark")
@@ -154,21 +154,19 @@ def show_detected_people():
         widget.destroy()
 
     sc_items = db.cursor.execute("""
-        SELECT ph.path, p.name
+        SELECT p.id, ph.path, p.name
         FROM people p
         JOIN faces f ON f.person_id = p.id
         JOIN photos ph ON ph.id = f.photo_id
         ORDER BY p.name
     """).fetchall()
 
-    for img_path, person_name in sc_items:
-        print(f"clovek: {person_name}, immidz: {img_path}")
-
-    for img_path, person_name in sc_items:
+    for person_id, img_path, person_name in sc_items:
         try:
             img = Image.open(img_path)
-            img.thumbnail((100, 100))
-            tk_img = ImageTk.PhotoImage(img)
+            img = ImageOps.exif_transpose(img)
+            img = img.resize((100, 100), Image.LANCZOS)
+            img = ImageTk.PhotoImage(img)
         except Exception as e:
             print(f"Thumbnail Error: {img_path}")
             continue
@@ -176,13 +174,29 @@ def show_detected_people():
         item_frame = tk.Frame(scroll_frame, bg="#222", pady=5)
         item_frame.pack(fill="x", padx=5, pady=2)
 
-        img_label = tk.Label(item_frame, image=tk_img, bg="#222")
-        img_label.image = tk_img
+        img_label = tk.Label(item_frame, image=img, bg="#222")
+        img_label.image = img
         img_label.pack(side="left", padx=5)
 
-        name_label = tk.Label(item_frame, text=person_name,
-                              fg="white", bg="#222", font=("Arial", 12))
-        name_label.pack(side="left", padx=10)
+        name_entry = tk.Entry(item_frame, fg="white",
+                              bg="#333", font=("Arial", 12))
+        name_entry.insert(0, person_name)  # person0,1,2...
+        name_entry.pack(side="left", padx=10, fill="x", expand=True)
+
+        # update name
+        def save_name(event=None, pid=person_id, entry=name_entry):
+            new_name = entry.get().strip()
+            if new_name:
+                db.cursor.execute(
+                    "UPDATE people SET name = ? WHERE id = ?", (new_name, pid))
+                db.conn.commit()
+                print(f"✅ Updated name for ID {pid} -> {new_name}")
+
+        name_entry.bind("<Return>", save_name)  # on Enter key press
+
+        save_btn = tk.Button(item_frame, text="💾", bg="#444", fg="white",
+                             command=lambda pid=person_id, entry=name_entry: save_name(pid=pid, entry=entry))
+        save_btn.pack(side="left", padx=5)
 
 
 ctk.CTkButton(app, text="Select folder", command=choose_folder).pack(pady=40)
