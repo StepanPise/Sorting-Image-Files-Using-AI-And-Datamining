@@ -13,8 +13,8 @@ import cv2
 import hashlib
 from face_clustering import assign_person_ids
 
-import PIL
-import io
+from PIL import Image, ImageTk
+import tkinter as tk
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -149,7 +149,40 @@ def print_person_groups():  # for debugging purposes
 
 
 def show_detected_people():
-    pass
+    # cleanup the frame
+    for widget in scroll_frame.winfo_children():
+        widget.destroy()
+
+    sc_items = db.cursor.execute("""
+        SELECT ph.path, p.name
+        FROM people p
+        JOIN faces f ON f.person_id = p.id
+        JOIN photos ph ON ph.id = f.photo_id
+        ORDER BY p.name
+    """).fetchall()
+
+    for img_path, person_name in sc_items:
+        print(f"clovek: {person_name}, immidz: {img_path}")
+
+    for img_path, person_name in sc_items:
+        try:
+            img = Image.open(img_path)
+            img.thumbnail((100, 100))
+            tk_img = ImageTk.PhotoImage(img)
+        except Exception as e:
+            print(f"Thumbnail Error: {img_path}")
+            continue
+
+        item_frame = tk.Frame(scroll_frame, bg="#222", pady=5)
+        item_frame.pack(fill="x", padx=5, pady=2)
+
+        img_label = tk.Label(item_frame, image=tk_img, bg="#222")
+        img_label.image = tk_img
+        img_label.pack(side="left", padx=5)
+
+        name_label = tk.Label(item_frame, text=person_name,
+                              fg="white", bg="#222", font=("Arial", 12))
+        name_label.pack(side="left", padx=10)
 
 
 ctk.CTkButton(app, text="Select folder", command=choose_folder).pack(pady=40)
