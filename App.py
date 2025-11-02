@@ -149,7 +149,6 @@ def print_person_groups():  # for debugging purposes
 
 
 def show_detected_people():
-    # cleanup the frame
     for widget in scroll_frame.winfo_children():
         widget.destroy()
 
@@ -158,6 +157,7 @@ def show_detected_people():
         FROM people p
         JOIN faces f ON f.person_id = p.id
         JOIN photos ph ON ph.id = f.photo_id
+        GROUP BY p.id, p.name
         ORDER BY p.name
     """).fetchall()
 
@@ -166,36 +166,38 @@ def show_detected_people():
             img = Image.open(img_path)
             img = ImageOps.exif_transpose(img)
             img = img.resize((100, 100), Image.LANCZOS)
-            img = ImageTk.PhotoImage(img)
+            img_ctk = ctk.CTkImage(
+                light_image=img, dark_image=img, size=(80, 80))
         except Exception as e:
             print(f"Thumbnail Error: {img_path}")
             continue
 
-        item_frame = tk.Frame(scroll_frame, bg="#222", pady=5)
-        item_frame.pack(fill="x", padx=5, pady=2)
+        item_frame = ctk.CTkFrame(
+            scroll_frame, fg_color="#222", corner_radius=8)
+        item_frame.pack(fill="x", padx=5, pady=5)
 
-        img_label = tk.Label(item_frame, image=img, bg="#222")
-        img_label.image = img
+        img_label = ctk.CTkLabel(item_frame, image=img_ctk, text="")
+        img_label.image = img_ctk
         img_label.pack(side="left", padx=5)
 
-        name_entry = tk.Entry(item_frame, fg="white",
-                              bg="#333", font=("Arial", 12))
-        name_entry.insert(0, person_name)  # person0,1,2...
+        name_entry = ctk.CTkEntry(
+            item_frame, width=100, placeholder_text=person_name)
         name_entry.pack(side="left", padx=10, fill="x", expand=True)
 
-        # update name
         def save_name(event=None, pid=person_id, entry=name_entry):
             new_name = entry.get().strip()
             if new_name:
                 db.cursor.execute(
                     "UPDATE people SET name = ? WHERE id = ?", (new_name, pid))
                 db.conn.commit()
-                print(f"✅ Updated name for ID {pid} -> {new_name}")
 
-        name_entry.bind("<Return>", save_name)  # on Enter key press
+        name_entry.bind("<Return>", save_name)
 
-        save_btn = tk.Button(item_frame, text="💾", bg="#444", fg="white",
-                             command=lambda pid=person_id, entry=name_entry: save_name(pid=pid, entry=entry))
+        save_btn = ctk.CTkButton(
+            item_frame, text="💾", width=40,
+            command=lambda pid=person_id, entry=name_entry: save_name(
+                pid=pid, entry=entry)
+        )
         save_btn.pack(side="left", padx=5)
 
 
@@ -204,6 +206,8 @@ ctk.CTkLabel(app, textvariable=selected_folder, text_color="lightblue").pack()
 
 scroll_frame = ctk.CTkScrollableFrame(app, label_text="Detected people")
 scroll_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+show_detected_people()
 
 
 # Hash verification prevents processing the same image even if its in diff folder
