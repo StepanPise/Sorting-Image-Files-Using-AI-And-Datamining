@@ -160,6 +160,12 @@ def _crop_image(img: Image.Image, person_id: int):
 
     top, right, bottom, left = coords_list[0]
 
+    margin = 30
+    top = max(0, top - margin)
+    left = max(0, left - margin)
+    bottom = min(img.height, bottom + margin)
+    right = min(img.width, right + margin)
+
     cropped = img.crop((left, top, right, bottom))
     return cropped
 
@@ -184,6 +190,12 @@ def show_detected_people():
 
             img = ImageOps.exif_transpose(img)
             img = img.resize((100, 100), Image.LANCZOS)
+
+            # circular mask
+            mask = Image.new("L", img.size, 0)
+            draw = ImageDraw.Draw(mask)
+            draw.ellipse((0, 0) + img.size, fill=255)
+            img.putalpha(mask)
 
             img_ctk = ctk.CTkImage(
                 light_image=img, dark_image=img, size=(80, 80))
