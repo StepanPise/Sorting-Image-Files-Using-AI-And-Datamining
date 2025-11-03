@@ -85,6 +85,27 @@ def get_photos_metadata(input_folder: Path):
             )
 
 
+# eval() = inference mode
+resnet = InceptionResnetV1(pretrained='vggface2').eval()
+
+
+def compute_embedding(face_img):
+    """
+    face_img = RGB numpy array
+    """
+    import torchvision.transforms as transforms
+    transform = transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.Resize((160, 160)),
+        transforms.ToTensor(),
+        transforms.Normalize([0.5], [0.5])
+    ])
+    face_tensor = transform(face_img).unsqueeze(0)  # [1,3,160,160]
+    with torch.no_grad():
+        embedding = resnet(face_tensor)  # [1,512]
+    return embedding.squeeze(0).numpy()  # 512-dim vector
+
+
 def process_faces(input_folder: Path):
     for img_path in input_folder.iterdir():
         if img_path.is_file() and img_path.suffix.lower() in [".jpg", ".jpeg", ".png"]:
@@ -116,9 +137,11 @@ def process_faces(input_folder: Path):
                     x1, y1, x2, y2 = face['facial_area']
                     face_img = rgb_image[y1:y2, x1:x2]
 
-                    # face_encoding = compute_embedding(face_img)
-                    # db.insert_face(photo_id, face_encoding.tobytes(),
-                    #                [y1, x2, y2, x1], None)
+                    # diff computation from hog or cnn
+                    face_encoding = compute_embedding(face_img)
+                    db.insert_face(photo_id, face_encoding.tobytes(),
+                                   [int(y1), int(x2), int(y2), int(x1)], None)
+
                 db.cursor.execute(
                     "UPDATE photos SET already_analyzed = 1 WHERE id = ?", (
                         photo_id,)
@@ -149,10 +172,11 @@ def _crop_image(img: Image.Image, person_id: int):
     coords = db.cursor.execute(
         "select face_coords from faces where person_id = ? limit 1", (person_id,)).fetchone()
 
-    coords_str = coords[0]  # its string
-    coords_list = json.loads(coords_str)  # its list now [[111,111,111,111]]
+    coords_str = coords[0]  # string
+    coords_list = json.loads(coords_str)  # list now [[111,111,111,111]]
 
-    top, right, bottom, left = coords_list[0]
+    # convert to int
+    top, right, bottom, left = [int(x) for x in coords_list[0]]
 
     margin = 30
     top = max(0, top - margin)
@@ -180,7 +204,7 @@ def show_detected_people():
     for person_id, img_path, person_name in sc_items:
         try:
             img = Image.open(img_path)
-            img = _crop_image(img, person_id)
+            # img = _crop_image(img, person_id)
 
             img = ImageOps.exif_transpose(img)
             img = img.resize((60, 60), Image.LANCZOS)
