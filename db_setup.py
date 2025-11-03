@@ -15,6 +15,8 @@ class Database:
         self.create_tables()
 
     def create_tables(self) -> None:
+
+        # PHOTOS
         self.cursor.execute("""
         CREATE TABLE IF NOT EXISTS photos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,11 +31,12 @@ class Database:
         )
         """)
 
+        # TAGS
         self.cursor.execute("""
         CREATE TABLE IF NOT EXISTS tags (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT UNIQUE NOT NULL
-        )
+        )             
         """)
 
         self.cursor.execute("""
@@ -45,6 +48,7 @@ class Database:
         )
         """)
 
+        # PEOPLE
         self.cursor.execute("""
         CREATE TABLE IF NOT EXISTS people (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -53,6 +57,7 @@ class Database:
         )
         """)
 
+        # FACES
         self.cursor.execute("""
         CREATE TABLE IF NOT EXISTS faces (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

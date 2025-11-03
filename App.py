@@ -13,8 +13,10 @@ import cv2
 import hashlib
 from face_clustering import assign_person_ids
 
-from PIL import Image, ImageTk, ImageOps
+from PIL import Image, ImageTk, ImageOps, ImageDraw
+
 import tkinter as tk
+import json
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -119,7 +121,8 @@ def process_faces(input_folder: Path):
                     face_encodings = face_recognition.face_encodings(
                         image, face_locations)
                     for encoding in face_encodings:
-                        db.insert_face(photo_id, encoding.tobytes(), None)
+                        db.insert_face(
+                            photo_id, encoding.tobytes(), face_locations, None)
 
                 db.cursor.execute(
                     "UPDATE photos SET already_analyzed = 1 WHERE id = ?", (
@@ -148,6 +151,19 @@ def print_person_groups():  # for debugging purposes
         print(f"Person {person_id} appears in photos: {unique_photos}")
 
 
+def _crop_image(img: Image.Image, person_id: int):
+    coords = db.cursor.execute(
+        "select face_coords from faces where person_id = ? limit 1", (person_id,)).fetchone()
+
+    coords_str = coords[0]  # its string
+    coords_list = json.loads(coords_str)  # its list now [[111,111,111,111]]
+
+    top, right, bottom, left = coords_list[0]
+
+    cropped = img.crop((left, top, right, bottom))
+    return cropped
+
+
 def show_detected_people():
     for widget in scroll_frame.winfo_children():
         widget.destroy()
@@ -164,12 +180,15 @@ def show_detected_people():
     for person_id, img_path, person_name in sc_items:
         try:
             img = Image.open(img_path)
+            img = _crop_image(img, person_id)
+
             img = ImageOps.exif_transpose(img)
             img = img.resize((100, 100), Image.LANCZOS)
+
             img_ctk = ctk.CTkImage(
                 light_image=img, dark_image=img, size=(80, 80))
         except Exception as e:
-            print(f"Thumbnail Error: {img_path}")
+            print(f"Thumbnail Error: {img_path} -> {e}")
             continue
 
         item_frame = ctk.CTkFrame(
