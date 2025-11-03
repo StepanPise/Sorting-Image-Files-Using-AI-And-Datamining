@@ -189,7 +189,7 @@ def show_detected_people():
             img = _crop_image(img, person_id)
 
             img = ImageOps.exif_transpose(img)
-            img = img.resize((100, 100), Image.LANCZOS)
+            img = img.resize((60, 60), Image.LANCZOS)
 
             # circular mask
             mask = Image.new("L", img.size, 0)
@@ -198,7 +198,8 @@ def show_detected_people():
             img.putalpha(mask)
 
             img_ctk = ctk.CTkImage(
-                light_image=img, dark_image=img, size=(80, 80))
+                light_image=img, dark_image=img, size=(60, 60))
+
         except Exception as e:
             print(f"Thumbnail Error: {img_path} -> {e}")
             continue
@@ -207,9 +208,10 @@ def show_detected_people():
             scroll_frame, fg_color="#222", corner_radius=8)
         item_frame.pack(fill="x", padx=5, pady=5)
 
-        img_label = ctk.CTkLabel(item_frame, image=img_ctk, text="")
+        img_label = ctk.CTkLabel(
+            item_frame, image=img_ctk, text="", width=60, height=60)
         img_label.image = img_ctk
-        img_label.pack(side="left", padx=5)
+        img_label.pack(side="left", padx=5, pady=5)
 
         name_entry = ctk.CTkEntry(
             item_frame, width=100, placeholder_text=person_name)
