@@ -18,6 +18,10 @@ from PIL import Image, ImageTk, ImageOps, ImageDraw
 import tkinter as tk
 import json
 
+from retinaface import RetinaFace
+from facenet_pytorch import InceptionResnetV1
+import torch
+
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
@@ -84,52 +88,42 @@ def get_photos_metadata(input_folder: Path):
 def process_faces(input_folder: Path):
     for img_path in input_folder.iterdir():
         if img_path.is_file() and img_path.suffix.lower() in [".jpg", ".jpeg", ".png"]:
-
             file_hash = compute_hash(img_path)
-
             row = db.cursor.execute(
                 "SELECT id, already_analyzed FROM photos WHERE hash = ?", (
                     file_hash,)
             ).fetchone()
             if not row:
                 continue
-
             photo_id, already_analyzed = row
-
             if already_analyzed:
                 continue
-
             try:
-                image = face_recognition.load_image_file(img_path)
+                image = cv2.imread(str(img_path))
+                rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                faces = RetinaFace.detect_faces(str(img_path))
+                if not faces:
+                    print(f"{img_path.name}: No faces found")
+                    db.cursor.execute(
+                        "UPDATE photos SET already_analyzed = 1 WHERE id = ?", (
+                            photo_id,)
+                    )
+                    db.conn.commit()
+                    continue
+                print(f"{img_path.name}: Face found:", list(faces.keys()))
+                for key in faces:
+                    face = faces[key]
+                    x1, y1, x2, y2 = face['facial_area']
+                    face_img = rgb_image[y1:y2, x1:x2]
 
-                scale = 0.25
-                small_img = cv2.resize(image, (0, 0), fx=scale, fy=scale)
-
-                face_locations = face_recognition.face_locations(
-                    small_img, model="hog")
-
-                # Scale back up face locations
-                face_locations = [
-                    [int(top / scale), int(right / scale),
-                     int(bottom / scale), int(left / scale)]
-                    for top, right, bottom, left in face_locations
-                ]
-
-                print(f"{img_path.name}: Face found:", face_locations)
-
-                if face_locations:
-                    face_encodings = face_recognition.face_encodings(
-                        image, face_locations)
-                    for encoding in face_encodings:
-                        db.insert_face(
-                            photo_id, encoding.tobytes(), face_locations, None)
-
+                    # face_encoding = compute_embedding(face_img)
+                    # db.insert_face(photo_id, face_encoding.tobytes(),
+                    #                [y1, x2, y2, x1], None)
                 db.cursor.execute(
                     "UPDATE photos SET already_analyzed = 1 WHERE id = ?", (
                         photo_id,)
                 )
                 db.conn.commit()
-
             except Exception as e:
                 print(
                     f"Error -> Image couldnt be analyzed: {img_path.name}: {e}")

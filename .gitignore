@@ -3,3 +3,4 @@ test-photos2/
 __pycache__/
 faceTest.py
 testUI.py
+photo_ai.db
