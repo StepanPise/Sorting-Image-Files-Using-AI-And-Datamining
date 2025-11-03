@@ -2,6 +2,7 @@ import sqlite3
 from sqlite3 import Connection, Cursor
 from typing import List, Tuple, Optional
 import numpy as np
+import json
 
 
 class Database:
@@ -57,6 +58,7 @@ class Database:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             photo_id INTEGER NOT NULL,
             embedding BLOB NOT NULL,
+            face_coords TEXT,
             person_id INTEGER,
             FOREIGN KEY(photo_id) REFERENCES photos(id),
             FOREIGN KEY(person_id) REFERENCES people(id)
@@ -165,11 +167,21 @@ class Database:
     # -------------------------
     # FACES
     # -------------------------
-    def insert_face(self, photo_id: int, embedding: bytes, person_id: Optional[int] = None) -> int:
+
+    def insert_face(
+        self,
+        photo_id: int,
+        embedding: bytes,
+        face_coords: Optional[List[Tuple[int, int, int, int]]] = None,
+        person_id: Optional[int] = None
+    ) -> int:
+        face_coords_str = json.dumps(face_coords or [])
+
         self.cursor.execute("""
-        INSERT INTO faces (photo_id, embedding, person_id)
-        VALUES (?, ?, ?)
-        """, (photo_id, embedding, person_id))
+            INSERT INTO faces (photo_id, embedding, face_coords, person_id)
+            VALUES (?, ?, ?, ?)
+        """, (photo_id, embedding, face_coords_str, person_id))
+
         self.conn.commit()
         return self.cursor.lastrowid
 
