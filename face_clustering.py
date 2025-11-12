@@ -35,13 +35,13 @@ def _load_faces():
     rows = db.cursor.execute("SELECT id, embedding FROM faces").fetchall()
     faces = []
     for face_id, embedding_bytes in rows:
-        embedding = np.frombuffer(embedding_bytes, dtype=np.float64)
+        embedding = np.frombuffer(embedding_bytes, dtype=np.float32)
         faces.append((face_id, embedding))
     return faces
 
 
 def _cluster_embeddings(embeddings_array):
-    clustering = DBSCAN(metric='euclidean', eps=0.5,
+    clustering = DBSCAN(metric='cosine', eps=0.4,
                         min_samples=1).fit(embeddings_array)
     return clustering.labels_
 
@@ -51,7 +51,7 @@ def _load_people_embeddings():
     people_avg_embeddings = {}
     for person_id, name, avg_bytes in people_rows:
         people_avg_embeddings[person_id] = (
-            np.frombuffer(avg_bytes, dtype=np.float64) if avg_bytes else None
+            np.frombuffer(avg_bytes, dtype=np.float32) if avg_bytes else None
         )
     return people_avg_embeddings
 

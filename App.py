@@ -137,10 +137,13 @@ def process_faces(input_folder: Path):
                     x1, y1, x2, y2 = face['facial_area']
                     face_img = rgb_image[y1:y2, x1:x2]
 
+                    face_coords = json.dumps(
+                        [[int(y1), int(x2), int(y2), int(x1)]])
+
                     # diff computation from hog or cnn
                     face_encoding = compute_embedding(face_img)
                     db.insert_face(photo_id, face_encoding.tobytes(),
-                                   [int(y1), int(x2), int(y2), int(x1)], None)
+                                   face_coords, None)
 
                 db.cursor.execute(
                     "UPDATE photos SET already_analyzed = 1 WHERE id = ?", (
