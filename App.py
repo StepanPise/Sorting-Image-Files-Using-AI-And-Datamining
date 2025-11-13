@@ -4,7 +4,7 @@ from tkinter import filedialog
 
 from db_setup import Database
 from metadata_handle import PhotoMetadata
-from PIL import Image, ImageTk, ImageOps, ImageDraw
+from PIL import Image, ImageOps, ImageDraw
 import json
 import time
 
@@ -18,9 +18,7 @@ ctk.set_default_color_theme("blue")
 app = ctk.CTk()
 app.geometry("400x400")
 app.title("Select Directory")
-
 selected_folder = ctk.StringVar()
-
 db = Database()
 
 
@@ -28,22 +26,25 @@ def choose_folder():
     folder = filedialog.askdirectory(title="Choose a folder")
     if folder:
         selected_folder.set(folder)
-        input_folder = Path(folder)
+        analyze_selected_folder(Path(folder))
 
-        get_photos_metadata(input_folder)
 
-        print("Starting TIMER...")
-        start = time.perf_counter()
+def analyze_selected_folder(input_folder):
 
-        process_faces(input_folder)
+    get_photos_metadata(input_folder)
 
-        assign_person_ids()
+    print("Starting TIMER...")
+    start = time.perf_counter()
 
-        show_detected_people()
+    process_faces(input_folder)
 
-        print_person_groups()
-        finish = time.perf_counter()
-        print(f"Processing completed in {finish - start:.2f} seconds.")
+    assign_person_ids()
+
+    show_detected_people()
+
+    print_person_groups()
+    finish = time.perf_counter()
+    print(f"Processing completed in {finish - start:.2f} seconds.")
 
 
 def get_photos_metadata(input_folder: Path):
