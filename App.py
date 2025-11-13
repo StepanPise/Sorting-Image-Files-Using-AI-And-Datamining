@@ -106,7 +106,8 @@ def compute_embedding(face_img):
     return embedding.squeeze(0).numpy()  # 512-dim vector
 
 
-def process_faces(input_folder: Path):
+def process_faces(input_folder: Path):  # REFACTOR THIS FUNCTION
+
     for img_path in input_folder.iterdir():
         if img_path.is_file() and img_path.suffix.lower() in [".jpg", ".jpeg", ".png"]:
             file_hash = compute_hash(img_path)
@@ -132,13 +133,14 @@ def process_faces(input_folder: Path):
                     db.conn.commit()
                     continue
                 print(f"{img_path.name}: Face found:", list(faces.keys()))
+
                 for key in faces:
                     face = faces[key]
                     x1, y1, x2, y2 = face['facial_area']
                     face_img = rgb_image[y1:y2, x1:x2]
 
                     face_coords = json.dumps(
-                        [[int(y1), int(x2), int(y2), int(x1)]])
+                        [[int(x1), int(y1), int(x2), int(y2)]])
 
                     # diff computation from hog or cnn
                     face_encoding = compute_embedding(face_img)
@@ -176,10 +178,11 @@ def _crop_image(img: Image.Image, person_id: int):
         "select face_coords from faces where person_id = ? limit 1", (person_id,)).fetchone()
 
     coords_str = coords[0]  # string
-    coords_list = json.loads(coords_str)  # list now [[111,111,111,111]]
+    # list now [[111,111,111,111]]
+    coords_list = json.loads(json.loads(coords_str))
 
     # convert to int
-    top, right, bottom, left = [int(x) for x in coords_list[0]]
+    left, top, right, bottom = [int(x) for x in coords_list[0]]
 
     margin = 30
     top = max(0, top - margin)
@@ -207,7 +210,7 @@ def show_detected_people():
     for person_id, img_path, person_name in sc_items:
         try:
             img = Image.open(img_path)
-            # img = _crop_image(img, person_id)
+            img = _crop_image(img, person_id)
 
             img = ImageOps.exif_transpose(img)
             img = img.resize((60, 60), Image.LANCZOS)
