@@ -8,6 +8,8 @@ from facenet_pytorch import InceptionResnetV1
 from db_setup import Database
 import torchvision.transforms as transforms
 
+import concurrent.futures
+
 
 db = Database()
 resnet = InceptionResnetV1(pretrained='vggface2').eval()
@@ -18,6 +20,12 @@ def process_faces(input_folder: Path):
         p for p in input_folder.iterdir()
         if p.is_file() and p.suffix.lower() in [".jpg", ".jpeg", ".png"]
     ]
+
+    # with concurrent.futures.ProcessPoolExecutor() as executor:
+    #     executor.map(process_photo, image_paths)
+
+    # with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+    #     list(executor.map(process_photo, image_paths))
 
     for img_path in image_paths:
         process_photo(img_path)

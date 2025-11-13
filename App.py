@@ -15,11 +15,12 @@ from face_detection import process_faces, compute_hash
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
+db = Database()
+
 app = ctk.CTk()
 app.geometry("400x400")
 app.title("Select Directory")
 selected_folder = ctk.StringVar()
-db = Database()
 
 
 def choose_folder():
