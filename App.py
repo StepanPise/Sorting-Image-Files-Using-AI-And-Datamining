@@ -4,23 +4,13 @@ from tkinter import filedialog
 
 from db_setup import Database
 from metadata_handle import PhotoMetadata
-import face_recognition
-
-import numpy as np
-from sklearn.cluster import DBSCAN
-import cv2
-
-import hashlib
-from face_clustering import assign_person_ids
-
 from PIL import Image, ImageTk, ImageOps, ImageDraw
-
-import tkinter as tk
 import json
+import time
 
-from retinaface import RetinaFace
-from facenet_pytorch import InceptionResnetV1
-import torch
+from face_clustering import assign_person_ids
+from face_detection import process_faces, compute_hash
+
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
@@ -42,6 +32,9 @@ def choose_folder():
 
         get_photos_metadata(input_folder)
 
+        print("Starting TIMER...")
+        start = time.perf_counter()
+
         process_faces(input_folder)
 
         assign_person_ids()
@@ -49,6 +42,8 @@ def choose_folder():
         show_detected_people()
 
         print_person_groups()
+        finish = time.perf_counter()
+        print(f"Processing completed in {finish - start:.2f} seconds.")
 
 
 def get_photos_metadata(input_folder: Path):
@@ -83,78 +78,6 @@ def get_photos_metadata(input_folder: Path):
                 width=width,
                 height=height
             )
-
-
-# eval() = inference mode
-resnet = InceptionResnetV1(pretrained='vggface2').eval()
-
-
-def compute_embedding(face_img):
-    """
-    face_img = RGB numpy array
-    """
-    import torchvision.transforms as transforms
-    transform = transforms.Compose([
-        transforms.ToPILImage(),
-        transforms.Resize((160, 160)),
-        transforms.ToTensor(),
-        transforms.Normalize([0.5], [0.5])
-    ])
-    face_tensor = transform(face_img).unsqueeze(0)  # [1,3,160,160]
-    with torch.no_grad():
-        embedding = resnet(face_tensor)  # [1,512]
-    return embedding.squeeze(0).numpy()  # 512-dim vector
-
-
-def process_faces(input_folder: Path):  # REFACTOR THIS FUNCTION
-
-    for img_path in input_folder.iterdir():
-        if img_path.is_file() and img_path.suffix.lower() in [".jpg", ".jpeg", ".png"]:
-            file_hash = compute_hash(img_path)
-            row = db.cursor.execute(
-                "SELECT id, already_analyzed FROM photos WHERE hash = ?", (
-                    file_hash,)
-            ).fetchone()
-            if not row:
-                continue
-            photo_id, already_analyzed = row
-            if already_analyzed:
-                continue
-            try:
-                image = cv2.imread(str(img_path))
-                rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                faces = RetinaFace.detect_faces(str(img_path))
-                if not faces:
-                    print(f"{img_path.name}: No faces found")
-                    db.cursor.execute(
-                        "UPDATE photos SET already_analyzed = 1 WHERE id = ?", (
-                            photo_id,)
-                    )
-                    db.conn.commit()
-                    continue
-                print(f"{img_path.name}: Face found:", list(faces.keys()))
-
-                for key in faces:
-                    face = faces[key]
-                    x1, y1, x2, y2 = face['facial_area']
-                    face_img = rgb_image[y1:y2, x1:x2]
-
-                    face_coords = json.dumps(
-                        [[int(x1), int(y1), int(x2), int(y2)]])
-
-                    # diff computation from hog or cnn
-                    face_encoding = compute_embedding(face_img)
-                    db.insert_face(photo_id, face_encoding.tobytes(),
-                                   face_coords, None)
-
-                db.cursor.execute(
-                    "UPDATE photos SET already_analyzed = 1 WHERE id = ?", (
-                        photo_id,)
-                )
-                db.conn.commit()
-            except Exception as e:
-                print(
-                    f"Error -> Image couldnt be analyzed: {img_path.name}: {e}")
 
 
 def print_person_groups():  # for debugging purposes
@@ -265,16 +188,6 @@ scroll_frame = ctk.CTkScrollableFrame(app, label_text="Detected people")
 scroll_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
 show_detected_people()
-
-
-# Hash verification prevents processing the same image even if its in diff folder
-def compute_hash(path: Path) -> str:
-    BUF_SIZE = 65536  # 64KB
-    sha256 = hashlib.sha256()
-    with open(path, "rb") as f:
-        while chunk := f.read(BUF_SIZE):
-            sha256.update(chunk)
-    return sha256.hexdigest()
 
 
 if __name__ == "__main__":
