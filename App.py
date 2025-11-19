@@ -103,7 +103,13 @@ def print_person_groups():  # for debugging purposes
 
 def _crop_image(img: Image.Image, person_id: int):
     db.cursor.execute(
-        "SELECT face_coords FROM faces WHERE person_id = %s LIMIT 1",
+        """
+        SELECT face_coords
+        FROM faces f
+        JOIN photos p ON p.id = f.photo_id
+        WHERE person_id = %s 
+        order by p.filename
+        LIMIT 1""",
         (person_id,)
     )
     coords = db.cursor.fetchone()
