@@ -1,16 +1,14 @@
 from db_setup import Database
-import json
 
 db = Database()
 
-db.cursor.execute("""
-SELECT id,face_coords FROM faces
+db.cursor.execute("SELECT COUNT(*) FROM photos")
+print("Images:", db.cursor.fetchall())
 
-""")
-rows = db.cursor.fetchall()
+db.cursor.execute("SELECT COUNT(*) FROM faces")
+print("Faces:", db.cursor.fetchone())
 
-for row in rows:
-    print(row)
+db.cursor.execute("SELECT COUNT(*) FROM people")
+print("People:", db.cursor.fetchone())
 
-db.conn.commit()
-db.conn.close()
+db.close()

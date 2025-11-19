@@ -1,77 +1,25 @@
-import sqlite3
-from sqlite3 import Connection, Cursor
+import psycopg2
+import psycopg2.extras
 from typing import List, Tuple, Optional
 import numpy as np
 import json
 
 
 class Database:
-    DB_PATH: str = "photo_ai.db"
 
     def __init__(self):
-        self.conn: Connection = sqlite3.connect(self.DB_PATH)
-        self.cursor: Cursor = self.conn.cursor()
-        self.conn.row_factory = sqlite3.Row
-        self.create_tables()
-
-    def create_tables(self) -> None:
-
-        # PHOTOS
-        self.cursor.execute("""
-        CREATE TABLE IF NOT EXISTS photos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            path TEXT NOT NULL,
-            filename TEXT NOT NULL,
-            hash TEXT UNIQUE NOT NULL,
-            already_analyzed INTEGER DEFAULT 0,
-            location_data TEXT,
-            time_data TEXT,
-            width INTEGER,
-            height INTEGER
+        self.conn = psycopg2.connect(
+            host="localhost",
+            port=5433,
+            dbname="postgres",
+            user="myuser",
+            password="mysecretpassword"
         )
-        """)
 
-        # TAGS
-        self.cursor.execute("""
-        CREATE TABLE IF NOT EXISTS tags (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE NOT NULL
-        )             
-        """)
-
-        self.cursor.execute("""
-        CREATE TABLE IF NOT EXISTS photo_tags (
-            photo_id INTEGER NOT NULL,
-            tag_id INTEGER NOT NULL,
-            FOREIGN KEY(photo_id) REFERENCES photos(id),
-            FOREIGN KEY(tag_id) REFERENCES tags(id)
+        self.cursor = self.conn.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor
         )
-        """)
-
-        # PEOPLE
-        self.cursor.execute("""
-        CREATE TABLE IF NOT EXISTS people (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            avg_embedding BLOB
-        )
-        """)
-
-        # FACES
-        self.cursor.execute("""
-        CREATE TABLE IF NOT EXISTS faces (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            photo_id INTEGER NOT NULL,
-            embedding BLOB NOT NULL,
-            face_coords TEXT,
-            person_id INTEGER,
-            FOREIGN KEY(photo_id) REFERENCES photos(id),
-            FOREIGN KEY(person_id) REFERENCES people(id)
-        )
-        """)
-
-        self.conn.commit()
-        print("Databaze a tabulky byly uspesne vytvoreny")
+        print("Connected to PostgreSQL")
 
     # -------------------------
     # PHOTOS
@@ -83,33 +31,35 @@ class Database:
                      time_data: Optional[str] = None,
                      width: Optional[int] = None,
                      height: Optional[int] = None) -> int:
-        self.cursor.execute("""
-        INSERT INTO photos (path, filename, hash, already_analyzed, location_data, time_data, width, height)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (path, filename, hash, already_analyzed, location_data, time_data, width, height))
-        self.conn.commit()
-        return self.cursor.lastrowid
 
-    def get_photos(self) -> List[sqlite3.Row]:
+        self.cursor.execute("""
+        INSERT INTO photos 
+        (path, filename, hash, already_analyzed, location_data, time_data, width, height)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        RETURNING id
+        """, (path, filename, hash, already_analyzed, location_data, time_data, width, height))
+
+        photo_id = self.cursor.fetchone()["id"]
+        self.conn.commit()
+        return photo_id
+
+    def get_photos(self):
         self.cursor.execute("SELECT * FROM photos")
         return self.cursor.fetchall()
 
     def delete_photo(self, photo_id: int) -> None:
-        self.cursor.execute("DELETE FROM photos WHERE id = ?", (photo_id,))
+        self.cursor.execute("DELETE FROM photos WHERE id = %s", (photo_id,))
         self.conn.commit()
 
     def update_photo(self, photo_id: int, **kwargs):
-        """
-        kwargs: column name = new value
-        """
         if not kwargs:
             return
 
-        columns = ", ".join(f"{col} = ?" for col in kwargs)
+        columns = ", ".join(f"{col} = %s" for col in kwargs)
         values = list(kwargs.values())
-        values.append(photo_id)  # pro WHERE id = ?
+        values.append(photo_id)
 
-        query = f"UPDATE photos SET {columns} WHERE id = ?"
+        query = f"UPDATE photos SET {columns} WHERE id = %s"
         self.cursor.execute(query, values)
         self.conn.commit()
 
@@ -118,16 +68,20 @@ class Database:
     # -------------------------
 
     def insert_tag(self, name: str) -> int:
-        self.cursor.execute("INSERT INTO tags (name) VALUES (?)", (name,))
+        self.cursor.execute("""
+        INSERT INTO tags (name) VALUES (%s)
+        RETURNING id
+        """, (name,))
+        tag_id = self.cursor.fetchone()["id"]
         self.conn.commit()
-        return self.cursor.lastrowid
+        return tag_id
 
-    def get_tags(self) -> List[sqlite3.Row]:
+    def get_tags(self):
         self.cursor.execute("SELECT * FROM tags")
         return self.cursor.fetchall()
 
     def delete_tag(self, tag_id: int) -> None:
-        self.cursor.execute("DELETE FROM tags WHERE id = ?", (tag_id,))
+        self.cursor.execute("DELETE FROM tags WHERE id = %s", (tag_id,))
         self.conn.commit()
 
     # -------------------------
@@ -135,96 +89,98 @@ class Database:
     # -------------------------
 
     def insert_person(self, name: str, avg_embedding: Optional[np.ndarray] = None) -> int:
-        self.cursor.execute("SELECT id FROM people WHERE name = ?", (name,))
+
+        self.cursor.execute("SELECT id FROM people WHERE name = %s", (name,))
         existing = self.cursor.fetchone()
 
         if existing:
-            return existing[0]
+            return existing["id"]
 
         if avg_embedding is not None:
             if isinstance(avg_embedding, np.ndarray):
                 avg_bytes = avg_embedding.tobytes()
-            elif isinstance(avg_embedding, bytes):
-                avg_bytes = avg_embedding
             else:
-                raise TypeError(
-                    f"Unsupported type for avg_embedding: {type(avg_embedding)}")
+                avg_bytes = avg_embedding
 
-            self.cursor.execute(
-                "INSERT INTO people (name, avg_embedding) VALUES (?, ?)",
-                (name, avg_bytes)
-            )
+            self.cursor.execute("""
+                INSERT INTO people (name, avg_embedding)
+                VALUES (%s, %s)
+                RETURNING id
+            """, (name, psycopg2.Binary(avg_bytes)))
         else:
-            self.cursor.execute(
-                "INSERT INTO people (name) VALUES (?)", (name,))
+            self.cursor.execute("""
+                INSERT INTO people (name) VALUES (%s)
+                RETURNING id
+            """, (name,))
 
+        person_id = self.cursor.fetchone()["id"]
         self.conn.commit()
-        return self.cursor.lastrowid
+        return person_id
 
-    def get_people(self) -> List[sqlite3.Row]:
+    def get_people(self):
         self.cursor.execute("SELECT * FROM people")
         return self.cursor.fetchall()
 
     def delete_person(self, person_id: int) -> None:
-        self.cursor.execute("DELETE FROM people WHERE id = ?", (person_id,))
+        self.cursor.execute("DELETE FROM people WHERE id = %s", (person_id,))
         self.conn.commit()
 
     # -------------------------
     # FACES
     # -------------------------
 
-    def insert_face(
-        self,
-        photo_id: int,
-        embedding: bytes,
-        face_coords: Optional[List[Tuple[int, int, int, int]]] = None,
-        person_id: Optional[int] = None
-    ) -> int:
+    def insert_face(self, photo_id: int, embedding: bytes,
+                    face_coords=None, person_id=None) -> int:
+
         face_coords_str = json.dumps(face_coords or [])
 
         self.cursor.execute("""
             INSERT INTO faces (photo_id, embedding, face_coords, person_id)
-            VALUES (?, ?, ?, ?)
-        """, (photo_id, embedding, face_coords_str, person_id))
+            VALUES (%s, %s, %s, %s)
+            RETURNING id
+        """, (photo_id, psycopg2.Binary(embedding), face_coords_str, person_id))
 
+        face_id = self.cursor.fetchone()["id"]
         self.conn.commit()
-        return self.cursor.lastrowid
+        return face_id
 
-    def get_faces(self) -> List[sqlite3.Row]:
+    def get_faces(self):
         self.cursor.execute("SELECT * FROM faces")
-        return self.cursor.fetchall()
+        rows = self.cursor.fetchall()
+        for row in rows:
+            if isinstance(row['embedding'], memoryview):
+                row['embedding'] = row['embedding'].tobytes()
+        return rows
 
     def delete_face(self, face_id: int) -> None:
-        self.cursor.execute("DELETE FROM faces WHERE id = ?", (face_id,))
+        self.cursor.execute("DELETE FROM faces WHERE id = %s", (face_id,))
         self.conn.commit()
 
     # -------------------------
     # PHOTO_TAGS
     # -------------------------
+
     def add_tag_to_photo(self, photo_id: int, tag_id: int) -> None:
         self.cursor.execute("""
-        INSERT INTO photo_tags (photo_id, tag_id) VALUES (?, ?)
+        INSERT INTO photo_tags (photo_id, tag_id)
+        VALUES (%s, %s)
         """, (photo_id, tag_id))
         self.conn.commit()
 
-    def get_photo_tags(self) -> List[sqlite3.Row]:
+    def get_photo_tags(self):
         self.cursor.execute("SELECT * FROM photo_tags")
         return self.cursor.fetchall()
 
     def remove_tag_from_photo(self, photo_id: int, tag_id: int) -> None:
         self.cursor.execute("""
-        DELETE FROM photo_tags WHERE photo_id = ? AND tag_id = ?
+        DELETE FROM photo_tags WHERE photo_id = %s AND tag_id = %s
         """, (photo_id, tag_id))
         self.conn.commit()
 
     # -------------------------
     # CLOSE
     # -------------------------
+
     def close(self) -> None:
         self.conn.close()
         print("Pripojeni k databazi uzavreno")
-
-
-if __name__ == "__main__":
-    db = Database()
-    db.close()

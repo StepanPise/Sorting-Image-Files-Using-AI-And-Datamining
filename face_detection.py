@@ -38,19 +38,29 @@ def analyze_image(img_path: Path):
 
     rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     faces = RetinaFace.detect_faces(str(img_path))
+    print(f"{img_path.name}: Detected faces = {faces}")
+
     return rgb_image, faces
 
 
 def process_photo(img_path: Path):
     file_hash = compute_hash(img_path)
 
-    row = db.cursor.execute(
-        "SELECT id, already_analyzed FROM photos WHERE hash = ?", (file_hash,)
-    ).fetchone()
+    # SELECT vrací dict, takže musíme přistupovat přes klíče
+    db.cursor.execute(
+        "SELECT id, already_analyzed FROM photos WHERE hash = %s", (file_hash,)
+    )
+
+    row = db.cursor.fetchone()
     if not row:
+        print(f"{img_path.name}: Photo not found in DB, skipping.")
         return
-    photo_id, already_analyzed = row
+
+    photo_id = row["id"]
+    already_analyzed = row["already_analyzed"]
+
     if already_analyzed:
+        print(f"{img_path.name}: Already analyzed, skipping.")
         return
 
     try:
@@ -59,13 +69,13 @@ def process_photo(img_path: Path):
         if not faces:
             print(f"{img_path.name}: No faces found")
             db.cursor.execute(
-                "UPDATE photos SET already_analyzed = 1 WHERE id = ?", (
+                "UPDATE photos SET already_analyzed = 1 WHERE id = %s", (
                     photo_id,)
             )
             db.conn.commit()
             return
 
-        print(f"{img_path.name}: Face found: {list(faces.keys())}")
+        print(f"{img_path.name}: Faces found: {list(faces.keys())}")
 
         for key, face in faces.items():
             x1, y1, x2, y2 = face["facial_area"]
@@ -77,7 +87,7 @@ def process_photo(img_path: Path):
                            face_coords, None)
 
         db.cursor.execute(
-            "UPDATE photos SET already_analyzed = 1 WHERE id = ?", (photo_id,)
+            "UPDATE photos SET already_analyzed = 1 WHERE id = %s", (photo_id,)
         )
         db.conn.commit()
 

@@ -32,11 +32,21 @@ def assign_person_ids():
 
 
 def _load_faces():
-    rows = db.cursor.execute("SELECT id, embedding FROM faces").fetchall()
+    db.cursor.execute("SELECT id, embedding FROM faces")
+    rows = db.cursor.fetchall()
     faces = []
-    for face_id, embedding_bytes in rows:
+
+    for row in rows:
+        face_id = row['id']
+        embedding_bytes = row['embedding']
+
+        # pokud je memoryview, převedeme na bytes
+        if isinstance(embedding_bytes, memoryview):
+            embedding_bytes = embedding_bytes.tobytes()
+
         embedding = np.frombuffer(embedding_bytes, dtype=np.float32)
         faces.append((face_id, embedding))
+
     return faces
 
 
@@ -50,9 +60,20 @@ def _load_people_embeddings():
     people_rows = db.get_people()
     people_avg_embeddings = {}
     for person_id, name, avg_bytes in people_rows:
-        people_avg_embeddings[person_id] = (
-            np.frombuffer(avg_bytes, dtype=np.float32) if avg_bytes else None
-        )
+        if avg_bytes is None:
+            people_avg_embeddings[person_id] = None
+            continue
+
+        # pokud je memoryview, převedeme na bytes
+        if isinstance(avg_bytes, memoryview):
+            avg_bytes = avg_bytes.tobytes()
+        elif isinstance(avg_bytes, str):
+            # někdy DB vrátí string, převedeme na bytes
+            avg_bytes = avg_bytes.encode('latin1')  # nebo 'utf-8', podle DB
+
+        people_avg_embeddings[person_id] = np.frombuffer(
+            avg_bytes, dtype=np.float32)
+
     return people_avg_embeddings
 
 
@@ -76,15 +97,16 @@ def _assign_clusters_to_people(embeddings_array, labels, unique_labels, people_a
             )
             new_avg = np.mean(all_embeddings, axis=0)
             db.cursor.execute(
-                "UPDATE people SET avg_embedding = ? WHERE id = ?",
+                "UPDATE people SET avg_embedding = %s WHERE id = %s",
                 (new_avg.tobytes(), person_id)
             )
             people_avg_embeddings[person_id] = new_avg
         else:
             person_name = f"Person{next_person_index}"
             avg_bytes = cluster_avg.tobytes() if cluster_avg is not None else None
-            db.insert_person(name=person_name, avg_embedding=avg_bytes)
-            person_id = db.cursor.lastrowid
+            # místo db.cursor.lastrowid použij insert_person, která vrací ID
+            person_id = db.insert_person(
+                name=person_name, avg_embedding=avg_bytes)
             people_avg_embeddings[person_id] = cluster_avg
             next_person_index += 1
 
@@ -106,5 +128,6 @@ def _update_faces_with_person_ids(face_ids, labels, label_to_person_id):
     for face_id, label in zip(face_ids, labels):
         person_id = label_to_person_id[label]
         db.cursor.execute(
-            "UPDATE faces SET person_id = ? WHERE id = ?", (person_id, face_id)
+            "UPDATE faces SET person_id = %s WHERE id = %s",
+            (person_id, face_id)
         )
