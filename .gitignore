@@ -1,6 +1,6 @@
 test-photos/
 test-photos2/
+test-photos3/
 __pycache__/
-faceTest.py
-testUI.py
 photo_ai.db
+db_handle.py

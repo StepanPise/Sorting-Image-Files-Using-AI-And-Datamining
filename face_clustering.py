@@ -1,6 +1,7 @@
 
 
 import numpy as np
+import psycopg2
 from sklearn.cluster import DBSCAN
 from db_setup import Database
 
@@ -40,7 +41,6 @@ def _load_faces():
         face_id = row['id']
         embedding_bytes = row['embedding']
 
-        # pokud je memoryview, převedeme na bytes
         if isinstance(embedding_bytes, memoryview):
             embedding_bytes = embedding_bytes.tobytes()
 
@@ -59,20 +59,31 @@ def _cluster_embeddings(embeddings_array):
 def _load_people_embeddings():
     people_rows = db.get_people()
     people_avg_embeddings = {}
+
     for person_id, name, avg_bytes in people_rows:
         if avg_bytes is None:
             people_avg_embeddings[person_id] = None
             continue
 
-        # pokud je memoryview, převedeme na bytes
+        # avg_bytes has to be BYTEA
         if isinstance(avg_bytes, memoryview):
             avg_bytes = avg_bytes.tobytes()
-        elif isinstance(avg_bytes, str):
-            # někdy DB vrátí string, převedeme na bytes
-            avg_bytes = avg_bytes.encode('latin1')  # nebo 'utf-8', podle DB
 
-        people_avg_embeddings[person_id] = np.frombuffer(
-            avg_bytes, dtype=np.float32)
+        elif isinstance(avg_bytes, str):
+            try:
+                if avg_bytes.startswith("\\x"):
+                    avg_bytes = bytes.fromhex(avg_bytes[2:])
+                else:
+                    avg_bytes = avg_bytes.encode('latin1')
+            except Exception as e:
+                people_avg_embeddings[person_id] = None
+                continue
+        if len(avg_bytes) % 4 != 0:
+            people_avg_embeddings[person_id] = None
+            continue
+
+        arr = np.frombuffer(avg_bytes, dtype=np.float32)
+        people_avg_embeddings[person_id] = arr
 
     return people_avg_embeddings
 
@@ -104,7 +115,7 @@ def _assign_clusters_to_people(embeddings_array, labels, unique_labels, people_a
         else:
             person_name = f"Person{next_person_index}"
             avg_bytes = cluster_avg.tobytes() if cluster_avg is not None else None
-            # místo db.cursor.lastrowid použij insert_person, která vrací ID
+
             person_id = db.insert_person(
                 name=person_name, avg_embedding=avg_bytes)
             people_avg_embeddings[person_id] = cluster_avg

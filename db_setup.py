@@ -89,29 +89,29 @@ class Database:
     # -------------------------
 
     def insert_person(self, name: str, avg_embedding: Optional[np.ndarray] = None) -> int:
-
         self.cursor.execute("SELECT id FROM people WHERE name = %s", (name,))
         existing = self.cursor.fetchone()
-
         if existing:
             return existing["id"]
 
         if avg_embedding is not None:
             if isinstance(avg_embedding, np.ndarray):
                 avg_bytes = avg_embedding.tobytes()
-            else:
+            elif isinstance(avg_embedding, bytes):
                 avg_bytes = avg_embedding
+            else:
+                raise ValueError(
+                    f"avg_embedding must be np.ndarray or bytes, got {type(avg_embedding)}")
 
-            self.cursor.execute("""
-                INSERT INTO people (name, avg_embedding)
-                VALUES (%s, %s)
-                RETURNING id
-            """, (name, psycopg2.Binary(avg_bytes)))
+            self.cursor.execute(
+                "INSERT INTO people (name, avg_embedding) VALUES (%s, %s) RETURNING id",
+                (name, psycopg2.Binary(avg_bytes))
+            )
         else:
-            self.cursor.execute("""
-                INSERT INTO people (name) VALUES (%s)
-                RETURNING id
-            """, (name,))
+            self.cursor.execute(
+                "INSERT INTO people (name) VALUES (%s) RETURNING id",
+                (name,)
+            )
 
         person_id = self.cursor.fetchone()["id"]
         self.conn.commit()
