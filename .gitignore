@@ -3,4 +3,4 @@ test-photos2/
 test-photos3/
 __pycache__/
 photo_ai.db
-db_handle.py
+db_test.py

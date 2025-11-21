@@ -101,43 +101,70 @@ def print_person_groups():  # for debugging purposes
         print(f"Person {person_id} appears in photos: {unique_photos}")
 
 
-def _crop_image(img: Image.Image, person_id: int):
+def _crop_image(person_id: int) -> Image.Image:
+
     db.cursor.execute(
         """
-        SELECT face_coords
+        SELECT f.face_coords, p.path
         FROM faces f
         JOIN photos p ON p.id = f.photo_id
-        WHERE person_id = %s 
-        order by p.filename
-        LIMIT 1""",
+        WHERE f.person_id = %s
+        """,
         (person_id,)
     )
-    coords = db.cursor.fetchone()
 
-    if coords is None:
-        return img
-    coords_str = coords["face_coords"]
-    coords_list = json.loads(json.loads(coords_str))
+    rows = db.cursor.fetchall()
 
-    # convert to int
-    left, top, right, bottom = [int(x) for x in coords_list[0]]
+    if not rows:
+        return None
 
-    margin = 30
-    top = max(0, top - margin)
-    left = max(0, left - margin)
-    bottom = min(img.height, bottom + margin)
-    right = min(img.width, right + margin)
+    biggest_area = -1
+    biggest_face = None
+    biggest_photo_path = None
 
-    cropped = img.crop((left, top, right, bottom))
-    return cropped
+    for row in rows:
+        try:
+            coords = json.loads(json.loads(row["face_coords"]))
+        except Exception:
+            continue
+
+        if not coords:
+            continue
+
+        left, top, right, bottom = coords[0]
+        area = (right - left) * (bottom - top)
+
+        if area > biggest_area:
+            biggest_area = area
+            biggest_face = (left, top, right, bottom)
+            biggest_photo_path = row["path"]
+
+    if biggest_face is None or biggest_photo_path is None:
+        return None
+
+    try:
+        image = Image.open(biggest_photo_path)
+    except Exception:
+        return None
+
+    left, top, right, bottom = biggest_face
+    MARGIN = 30
+    top = max(0, top - MARGIN)
+    left = max(0, left - MARGIN)
+    bottom = min(image.height, bottom + MARGIN)
+    right = min(image.width, right + MARGIN)
+
+    return image.crop((left, top, right, bottom))
 
 
 def show_detected_people():
+    # clear scroll frame
     for widget in scroll_frame.winfo_children():
         widget.destroy()
 
+    # load people ids
     db.cursor.execute("""
-        SELECT p.id, MIN(ph.path) AS photo_path, p.name
+        SELECT p.id, p.name
         FROM people p
         JOIN faces f ON f.person_id = p.id
         JOIN photos ph ON ph.id = f.photo_id
@@ -148,12 +175,13 @@ def show_detected_people():
 
     for row in sc_items:
         person_id = row['id']
-        img_path = row['photo_path']
         person_name = row['name']
 
+        img = None
         try:
-            img = Image.open(img_path)
-            img = _crop_image(img, person_id)
+            img = _crop_image(person_id)
+            if img is None:
+                continue
 
             img = ImageOps.exif_transpose(img)
             img = img.resize((60, 60), Image.LANCZOS)
@@ -165,13 +193,14 @@ def show_detected_people():
             img.putalpha(mask)
 
             img_ctk = ctk.CTkImage(
-                light_image=img, dark_image=img, size=(60, 60))
+                light_image=img, dark_image=img, size=(60, 60)
+            )
 
         except Exception as e:
-            print(f"Thumbnail Error: {img_path} -> {e}")
+            print(f"Thumbnail Error for person {person_id}: {e}")
             continue
 
-        # UI code
+        # UI
         item_frame = ctk.CTkFrame(
             scroll_frame, fg_color="#222", corner_radius=8)
         item_frame.pack(fill="x", padx=5, pady=5)
@@ -189,7 +218,9 @@ def show_detected_people():
             new_name = entry.get().strip()
             if new_name:
                 db.cursor.execute(
-                    "UPDATE people SET name = %s WHERE id = %s", (new_name, pid))
+                    "UPDATE people SET name = %s WHERE id = %s", (
+                        new_name, pid)
+                )
                 db.conn.commit()
 
         name_entry.bind("<Return>", save_name)
