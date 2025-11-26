@@ -1,1 +1,1 @@
-A Python desktop application that organizes and sorts photos using metadata and AI-powered face recognition. In progress
+In-progress image sorting application that organizes photos based on metadata and detected faces. Future features may include prompt-based photo search.
