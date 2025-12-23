@@ -12,7 +12,7 @@ from face_clustering import assign_person_ids
 from face_detection import process_faces, compute_hash
 
 
-ctk.set_appearance_mode("dark")
+ctk.set_appearance_mode("system")
 ctk.set_default_color_theme("blue")
 
 db = Database()
@@ -21,6 +21,8 @@ app = ctk.CTk()
 app.geometry("400x400")
 app.title("Select Directory")
 selected_folder = ctk.StringVar()
+
+detect_faces_enabled = True
 
 
 def choose_folder():
@@ -37,9 +39,10 @@ def analyze_selected_folder(input_folder):
     print("Starting TIMER...")
     start = time.perf_counter()
 
-    process_faces(input_folder)
+    if detect_faces_enabled:
+        process_faces(input_folder)
 
-    assign_person_ids()
+        assign_person_ids()
 
     show_detected_people()
 
@@ -201,6 +204,7 @@ def show_detected_people():
             continue
 
         # UI
+        # item in scrollframe
         item_frame = ctk.CTkFrame(
             scroll_frame, fg_color="#222", corner_radius=8)
         item_frame.pack(fill="x", padx=5, pady=5)
@@ -233,11 +237,34 @@ def show_detected_people():
         save_btn.pack(side="left", padx=5)
 
 
-ctk.CTkButton(app, text="Select folder", command=choose_folder).pack(pady=40)
+def on_switch_toggle():
+    global detect_faces_enabled
+    detect_faces_enabled = bool(show_switch.get())
+
+
+top_row = ctk.CTkFrame(app)
+top_row.pack(pady=20)
+
+select_btn = ctk.CTkButton(
+    top_row, text="Select folder", command=choose_folder)
+select_btn.pack(side="left", padx=10)
+
+show_switch = ctk.CTkSwitch(
+    top_row,
+    text="Detect faces",
+    command=on_switch_toggle
+)
+show_switch.pack(side="left", padx=10)
+
 ctk.CTkLabel(app, textvariable=selected_folder, text_color="lightblue").pack()
 
-scroll_frame = ctk.CTkScrollableFrame(app, label_text="Detected people")
-scroll_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+scroll_frame = ctk.CTkScrollableFrame(
+    app, label_text="Detected people")
+scroll_frame.pack(fill="both", expand=False, padx=10, pady=10)
+
+process_btn = ctk.CTkButton(app, text="Export photos")
+process_btn.pack(pady=10)
 
 show_detected_people()
 
