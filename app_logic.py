@@ -7,14 +7,19 @@ from db_setup import Database
 from metadata_handle import PhotoMetadata
 from face_clustering import assign_person_ids
 from face_detection import process_faces, compute_hash
+from repositories.photo_repo import PhotoRepository
+from repositories.face_repo import FaceRepository
+from repositories.person_repo import PersonRepository
 
 
 class PhotoController:
     def __init__(self):
         self.db = Database()
+        self.photo_repo = PhotoRepository(self.db)
+        self.face_repo = FaceRepository(self.db)
+        self.person_repo = PersonRepository(self.db)
 
     def analyze_folder(self, folder_path, detect_faces=True):
-        """Main scanning process."""
         input_folder = Path(folder_path)
 
         # 1. Get metadata
@@ -26,7 +31,6 @@ class PhotoController:
             assign_person_ids()
 
     def _scan_metadata(self, input_folder: Path):
-        """Private method for file scanning."""
         for path in input_folder.iterdir():
             if path.is_file() and path.suffix.lower() in [".jpg", ".jpeg", ".png"]:
                 filename = path.name
@@ -37,47 +41,22 @@ class PhotoController:
                 width, height = PhotoMetadata.get_size(path)
 
                 # Check if photo with this hash exists to prevent duplication
-                self.db.cursor.execute(
-                    "SELECT id FROM photos WHERE hash = %s", (hash_val,))
-                exists = self.db.cursor.fetchone()
+                exists = self.photo_repo.get_by_hash(hash_val)
 
                 if exists:
-                    self.db.update_photo(
+                    self.photo_repo.update_photo(
                         photo_id=exists["id"], path=path_str, filename=filename)
                 else:
-                    self.db.insert_photo(path=path_str, filename=filename, hash=hash_val,
-                                         location_data=location_data, time_data=time_data,
-                                         width=width, height=height)
-
-    def get_all_people(self):
-        """Returns list of people (data), not UI elements."""
-        self.db.cursor.execute("""
-            SELECT p.id, p.name
-            FROM people p
-            JOIN faces f ON f.person_id = p.id
-            JOIN photos ph ON ph.id = f.photo_id
-            GROUP BY p.id, p.name
-            ORDER BY p.name;
-        """)
-        return self.db.cursor.fetchall()
-
-    def update_person_name(self, person_id, new_name):
-        self.db.cursor.execute(
-            "UPDATE people SET name = %s WHERE id = %s", (new_name, person_id))
-        self.db.conn.commit()
+                    self.photo_repo.insert_photo(
+                        path=path_str, filename=filename, hash=hash_val,
+                        location_data=location_data, time_data=time_data,
+                        width=width, height=height
+                    )
 
     def get_person_thumbnail(self, person_id):
-        """Returns PIL Image object (cropped face) or None."""
-        self.db.cursor.execute(
-            """
-            SELECT f.face_coords, p.path
-            FROM faces f
-            JOIN photos p ON p.id = f.photo_id
-            WHERE f.person_id = %s
-            """,
-            (person_id,)
-        )
-        rows = self.db.cursor.fetchall()
+
+        rows = self.face_repo.get_faces_by_person_id(person_id)
+
         if not rows:
             return None
 
@@ -119,3 +98,13 @@ class PhotoController:
 
     def close(self):
         self.db.close()
+
+# =========================================================================
+#  WRAPPER METODS FOR UI (app.py)
+# =========================================================================
+
+    def get_all_people(self):
+        return self.person_repo.get_all_with_faces()
+
+    def update_person_name(self, person_id, new_name):
+        self.person_repo.update_name(person_id, new_name)
