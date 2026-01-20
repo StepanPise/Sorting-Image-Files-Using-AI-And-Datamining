@@ -1,274 +1,128 @@
-from pathlib import Path
 import customtkinter as ctk
 from tkinter import filedialog
+from PIL import Image, ImageDraw
 
-from db_setup import Database
-from metadata_handle import PhotoMetadata
-from PIL import Image, ImageOps, ImageDraw
-import json
-import time
-
-from face_clustering import assign_person_ids
-from face_detection import process_faces, compute_hash
-
+from app_logic import PhotoController
 
 ctk.set_appearance_mode("system")
 ctk.set_default_color_theme("blue")
 
-db = Database()
 
-app = ctk.CTk()
-app.geometry("400x400")
-app.title("Select Directory")
-selected_folder = ctk.StringVar()
+class PhotoApp(ctk.CTk):
+    def __init__(self):
+        super().__init__()
 
-detect_faces_enabled = True
+        self.controller = PhotoController()
 
+        self.geometry("500x600")
+        self.title("AI Photo Manager")
 
-def choose_folder():
-    folder = filedialog.askdirectory(title="Choose a folder")
-    if folder:
-        selected_folder.set(folder)
-        analyze_selected_folder(Path(folder))
+        self.selected_folder = ctk.StringVar()
+        self.detect_faces_enabled = ctk.BooleanVar(value=True)
 
+        self.create_widgets()
 
-def analyze_selected_folder(input_folder):
+        # Load people on startup (if any exist in DB)
+        self.refresh_people_list()
 
-    get_photos_metadata(input_folder)
+    def create_widgets(self):
+        # Top frame
+        top_frame = ctk.CTkFrame(self)
+        top_frame.pack(pady=20, padx=20, fill="x")
 
-    print("Starting TIMER...")
-    start = time.perf_counter()
+        # Top frame item 1
+        self.btn_select = ctk.CTkButton(
+            top_frame, text="Select Folder", command=self.choose_folder)
+        self.btn_select.pack(side="left", padx=10)
 
-    if detect_faces_enabled:
-        process_faces(input_folder)
+        # Top frame item 2
+        self.switch_detect = ctk.CTkSwitch(
+            top_frame, text="Detect Faces", variable=self.detect_faces_enabled)
+        self.switch_detect.pack(side="left", padx=10)
 
-        assign_person_ids()
+        # Selected folder label
+        self.lbl_folder = ctk.CTkLabel(
+            self, textvariable=self.selected_folder, text_color="gray")
+        self.lbl_folder.pack()
 
-    show_detected_people()
+        # Scrollable list of people
+        self.scroll_frame = ctk.CTkScrollableFrame(
+            self, label_text="Found People")
+        self.scroll_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-    print_person_groups()
-    finish = time.perf_counter()
-    print(f"Processing completed in {finish - start:.2f} seconds.")
+        # Export button (not implemented)
+        self.btn_export = ctk.CTkButton(self, text="Export Photos (TODO)")
+        self.btn_export.pack(pady=10)
 
+    def choose_folder(self):
+        folder = filedialog.askdirectory()
+        if folder:
+            self.selected_folder.set(folder)
+            print("Starting analysis...")
+            self.controller.analyze_folder(
+                folder, detect_faces=self.detect_faces_enabled.get())
+            print("Done.")
+            self.refresh_people_list()
 
-def get_photos_metadata(input_folder: Path):
-    for path in input_folder.iterdir():
-        if path.is_file() and path.suffix.lower() in [".jpg", ".jpeg", ".png"]:
+    def refresh_people_list(self):
+        for widget in self.scroll_frame.winfo_children():
+            widget.destroy()
 
-            filename = path.name
-            path_str = str(path)
-            hash = compute_hash(path)
-            time_data = PhotoMetadata.get_date(path)
-            location_data = PhotoMetadata.get_location(path)
-            width, height = PhotoMetadata.get_size(path)
+        people_data = self.controller.get_all_people()
 
-            db.cursor.execute(
-                "SELECT id FROM photos WHERE hash = %s", (hash,)
-            )
-            exists = db.cursor.fetchone()
-            if exists is not None:
-                db.update_photo(
-                    photo_id=exists["id"],
-                    path=path_str,
-                    filename=filename,
-                )
-                continue
+        for row in people_data:
+            self.create_person_row(row['id'], row['name'])
 
-            db.insert_photo(
-                path=path_str,
-                filename=filename,
-                hash=hash,
-                location_data=location_data,
-                time_data=time_data,
-                width=width,
-                height=height
-            )
+    def create_person_row(self, person_id, person_name):
+        pil_img = self.controller.get_person_thumbnail(person_id)
 
-
-def print_person_groups():  # for debugging purposes
-
-    db.cursor.execute("SELECT id, photo_id, person_id FROM faces")
-    rows = db.cursor.fetchall()
-
-    from collections import defaultdict
-    groups = defaultdict(list)
-
-    for row in rows:
-        face_id = row["id"]
-        photo_id = row["photo_id"]
-        person_id = row["person_id"]
-        groups[person_id].append(photo_id)
-
-    for person_id, photos in groups.items():
-        unique_photos = list(set(photos))
-        print(f"Person {person_id} appears in photos: {unique_photos}")
-
-
-def _crop_image(person_id: int) -> Image.Image:
-
-    db.cursor.execute(
-        """
-        SELECT f.face_coords, p.path
-        FROM faces f
-        JOIN photos p ON p.id = f.photo_id
-        WHERE f.person_id = %s
-        """,
-        (person_id,)
-    )
-
-    rows = db.cursor.fetchall()
-
-    if not rows:
-        return None
-
-    biggest_area = -1
-    biggest_face = None
-    biggest_photo_path = None
-
-    for row in rows:
-        try:
-            coords = json.loads(json.loads(row["face_coords"]))
-        except Exception:
-            continue
-
-        if not coords:
-            continue
-
-        left, top, right, bottom = coords[0]
-        area = (right - left) * (bottom - top)
-
-        if area > biggest_area:
-            biggest_area = area
-            biggest_face = (left, top, right, bottom)
-            biggest_photo_path = row["path"]
-
-    if biggest_face is None or biggest_photo_path is None:
-        return None
-
-    try:
-        image = Image.open(biggest_photo_path)
-    except Exception:
-        return None
-
-    left, top, right, bottom = biggest_face
-    MARGIN = 30
-    top = max(0, top - MARGIN)
-    left = max(0, left - MARGIN)
-    bottom = min(image.height, bottom + MARGIN)
-    right = min(image.width, right + MARGIN)
-
-    return image.crop((left, top, right, bottom))
-
-
-def show_detected_people():
-    # clear scroll frame
-    for widget in scroll_frame.winfo_children():
-        widget.destroy()
-
-    # load people ids
-    db.cursor.execute("""
-        SELECT p.id, p.name
-        FROM people p
-        JOIN faces f ON f.person_id = p.id
-        JOIN photos ph ON ph.id = f.photo_id
-        GROUP BY p.id, p.name
-        ORDER BY p.name;
-    """)
-    sc_items = db.cursor.fetchall()
-
-    for row in sc_items:
-        person_id = row['id']
-        person_name = row['name']
-
-        img = None
-        try:
-            img = _crop_image(person_id)
-            if img is None:
-                continue
-
-            img = ImageOps.exif_transpose(img)
-            img = img.resize((60, 60), Image.LANCZOS)
-
-            # circular mask
-            mask = Image.new("L", img.size, 0)
+        if pil_img:
+            pil_img = pil_img.resize((60, 60), Image.LANCZOS)
+            mask = Image.new("L", pil_img.size, 0)
             draw = ImageDraw.Draw(mask)
-            draw.ellipse((0, 0) + img.size, fill=255)
-            img.putalpha(mask)
+            draw.ellipse((0, 0) + pil_img.size, fill=255)
+            pil_img.putalpha(mask)
 
-            img_ctk = ctk.CTkImage(
-                light_image=img, dark_image=img, size=(60, 60)
-            )
+            img_ctk = ctk.CTkImage(light_image=pil_img,
+                                   dark_image=pil_img, size=(60, 60))
+        else:
+            img_ctk = None
 
-        except Exception as e:
-            print(f"Thumbnail Error for person {person_id}: {e}")
-            continue
-
-        # UI
-        # item in scrollframe
+        # Create row (frame) in scroll frame
         item_frame = ctk.CTkFrame(
-            scroll_frame, fg_color="#222", corner_radius=8)
+            self.scroll_frame, fg_color=("gray85", "gray25"))
         item_frame.pack(fill="x", padx=5, pady=5)
 
-        img_label = ctk.CTkLabel(
-            item_frame, image=img_ctk, text="", width=60, height=60)
-        img_label.image = img_ctk
-        img_label.pack(side="left", padx=5, pady=5)
+        # Create thumbnail in item frame
+        if img_ctk:
+            lbl_img = ctk.CTkLabel(item_frame, image=img_ctk, text="")
+            lbl_img.pack(side="left", padx=5, pady=5)
 
-        name_entry = ctk.CTkEntry(
-            item_frame, width=100, placeholder_text=person_name)
-        name_entry.pack(side="left", padx=10, fill="x", expand=True)
+        # Create name in item frame
+        entry_name = ctk.CTkEntry(item_frame, placeholder_text=person_name)
+        entry_name.pack(side="left", padx=10, fill="x", expand=True)
 
-        def save_name(event=None, pid=person_id, entry=name_entry):
-            new_name = entry.get().strip()
+        def save_action(event=None):
+            new_name = entry_name.get().strip()
             if new_name:
-                db.cursor.execute(
-                    "UPDATE people SET name = %s WHERE id = %s", (
-                        new_name, pid)
-                )
-                db.conn.commit()
+                self.controller.update_person_name(person_id, new_name)
+                print(f"Saved: {new_name}")
+                self.focus()
 
-        name_entry.bind("<Return>", save_name)
+        # Call save_action when Enter
+        entry_name.bind("<Return>", save_action)
 
-        save_btn = ctk.CTkButton(
-            item_frame, text="💾", width=40,
-            command=lambda pid=person_id, entry=name_entry: save_name(
-                pid=pid, entry=entry)
-        )
-        save_btn.pack(side="left", padx=5)
+        # Create Save button in item frame
+        btn_save = ctk.CTkButton(item_frame, text="💾",
+                                 width=40, command=save_action)
+        btn_save.pack(side="left", padx=5)
 
-
-def on_switch_toggle():
-    global detect_faces_enabled
-    detect_faces_enabled = bool(show_switch.get())
-
-
-top_row = ctk.CTkFrame(app)
-top_row.pack(pady=20)
-
-select_btn = ctk.CTkButton(
-    top_row, text="Select folder", command=choose_folder)
-select_btn.pack(side="left", padx=10)
-
-show_switch = ctk.CTkSwitch(
-    top_row,
-    text="Detect faces",
-    command=on_switch_toggle
-)
-show_switch.pack(side="left", padx=10)
-
-ctk.CTkLabel(app, textvariable=selected_folder, text_color="lightblue").pack()
-
-
-scroll_frame = ctk.CTkScrollableFrame(
-    app, label_text="Detected people")
-scroll_frame.pack(fill="both", expand=False, padx=10, pady=10)
-
-process_btn = ctk.CTkButton(app, text="Export photos")
-process_btn.pack(pady=10)
-
-show_detected_people()
+    def on_closing(self):
+        self.controller.close()
+        self.destroy()
 
 
 if __name__ == "__main__":
+    app = PhotoApp()
+    app.protocol("WM_DELETE_WINDOW", app.on_closing)
     app.mainloop()
-    db.close()
