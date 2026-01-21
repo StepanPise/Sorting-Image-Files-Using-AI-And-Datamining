@@ -6,7 +6,7 @@ import time
 from db_setup import Database
 from metadata_handle import PhotoMetadata
 from face_clustering import assign_person_ids
-from face_detection import process_faces, compute_hash
+from face_detection import FaceDetection
 from repositories.photo_repo import PhotoRepository
 from repositories.face_repo import FaceRepository
 from repositories.person_repo import PersonRepository
@@ -18,6 +18,7 @@ class PhotoController:
         self.photo_repo = PhotoRepository(self.db)
         self.face_repo = FaceRepository(self.db)
         self.person_repo = PersonRepository(self.db)
+        self.face_detector = FaceDetection(self.photo_repo, self.face_repo)
 
     def analyze_folder(self, folder_path, detect_faces=True):
         input_folder = Path(folder_path)
@@ -27,7 +28,7 @@ class PhotoController:
 
         # 2. Face detection
         if detect_faces:
-            process_faces(input_folder)
+            self.face_detector.process_faces(input_folder)
             assign_person_ids()
 
     def _scan_metadata(self, input_folder: Path):
@@ -35,7 +36,7 @@ class PhotoController:
             if path.is_file() and path.suffix.lower() in [".jpg", ".jpeg", ".png"]:
                 filename = path.name
                 path_str = str(path)
-                hash_val = compute_hash(path)
+                hash_val = self.face_detector.compute_hash(path)
                 time_data = PhotoMetadata.get_date(path)
                 location_data = PhotoMetadata.get_location(path)
                 width, height = PhotoMetadata.get_size(path)

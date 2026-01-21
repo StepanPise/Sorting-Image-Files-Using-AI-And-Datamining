@@ -29,3 +29,10 @@ class PhotoRepository(BaseRepository):
             (kwargs["path"], kwargs["filename"], photo_id)
         )
         self.conn.commit()
+
+    def mark_analyzed(self, photo_id):
+        self.cursor.execute(
+            "UPDATE photos SET already_analyzed = 1 WHERE id = %s",
+            (photo_id,)
+        )
+        self.conn.commit()

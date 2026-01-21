@@ -15,3 +15,13 @@ class FaceRepository(BaseRepository):
             WHERE f.person_id = %s
         """, (person_id,))
         return self.cursor.fetchall()
+
+    def add(self, photo_id, embedding_bytes, face_coords):
+        self.cursor.execute(
+            """
+                INSERT INTO faces (photo_id, embedding, face_coords, person_id)
+                VALUES (%s, %s, %s, NULL)
+                """,
+            (photo_id, embedding_bytes, face_coords)
+        )
+        self.conn.commit()
