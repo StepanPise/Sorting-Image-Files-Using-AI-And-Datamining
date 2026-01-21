@@ -25,3 +25,14 @@ class FaceRepository(BaseRepository):
             (photo_id, embedding_bytes, face_coords)
         )
         self.conn.commit()
+
+    def get_all_embeddings(self):
+        self.cursor.execute("SELECT id, embedding FROM faces")
+        return self.cursor.fetchall()
+
+    def update_person_id(self, face_id, person_id):
+        self.cursor.execute(
+            "UPDATE faces SET person_id = %s WHERE id = %s",
+            (person_id, face_id)
+        )
+        self.conn.commit()

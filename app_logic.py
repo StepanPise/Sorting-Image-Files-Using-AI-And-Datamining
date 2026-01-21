@@ -5,7 +5,7 @@ import time
 
 from db_setup import Database
 from metadata_handle import PhotoMetadata
-from face_clustering import assign_person_ids
+from face_clustering import FaceClustering
 from face_detection import FaceDetection
 from repositories.photo_repo import PhotoRepository
 from repositories.face_repo import FaceRepository
@@ -18,7 +18,9 @@ class PhotoController:
         self.photo_repo = PhotoRepository(self.db)
         self.face_repo = FaceRepository(self.db)
         self.person_repo = PersonRepository(self.db)
+
         self.face_detector = FaceDetection(self.photo_repo, self.face_repo)
+        self.face_clustering = FaceClustering(self.face_repo, self.person_repo)
 
     def analyze_folder(self, folder_path, detect_faces=True):
         input_folder = Path(folder_path)
@@ -29,7 +31,7 @@ class PhotoController:
         # 2. Face detection
         if detect_faces:
             self.face_detector.process_faces(input_folder)
-            assign_person_ids()
+            self.face_clustering.assign_person_ids()
 
     def _scan_metadata(self, input_folder: Path):
         for path in input_folder.iterdir():
@@ -55,38 +57,50 @@ class PhotoController:
                     )
 
     def get_person_thumbnail(self, person_id):
-
         rows = self.face_repo.get_faces_by_person_id(person_id)
 
         if not rows:
             return None
 
-        # Find the biggest face for thumbnail
         biggest_area = -1
         biggest_face = None
         biggest_photo_path = None
 
         for row in rows:
             try:
-                coords = json.loads(json.loads(row["face_coords"]))
+                raw_coords = row["face_coords"]
+                coords = None
+
+                if isinstance(raw_coords, str):
+                    coords = json.loads(raw_coords)
+                    if isinstance(coords, str):
+                        coords = json.loads(coords)
+                else:
+                    coords = raw_coords
+
                 if not coords:
                     continue
+
                 left, top, right, bottom = coords[0]
                 area = (right - left) * (bottom - top)
+
                 if area > biggest_area:
                     biggest_area = area
                     biggest_face = (left, top, right, bottom)
                     biggest_photo_path = row["path"]
+
             except Exception:
                 continue
 
-        if not biggest_face:
+        if biggest_face is None or biggest_photo_path is None:
             return None
 
         try:
             img = Image.open(biggest_photo_path)
             left, top, right, bottom = biggest_face
             MARGIN = 30
+
+            # Ořez s okrajem
             img_crop = img.crop((
                 max(0, left - MARGIN),
                 max(0, top - MARGIN),
@@ -94,6 +108,7 @@ class PhotoController:
                 min(img.height, bottom + MARGIN)
             ))
             return ImageOps.exif_transpose(img_crop)
+
         except Exception:
             return None
 

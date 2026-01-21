@@ -24,3 +24,24 @@ class PersonRepository(BaseRepository):
             (new_name, person_id)
         )
         self.conn.commit()
+
+    # Create person and return id
+    def create_person(self, name, avg_embedding_bytes):
+        self.cursor.execute(
+            "INSERT INTO people (name, avg_embedding) VALUES (%s, %s) RETURNING id",
+            (name, avg_embedding_bytes)
+        )
+        new_id = self.cursor.fetchone()['id']
+        self.conn.commit()
+        return new_id
+
+    def get_all_people_data(self):
+        self.cursor.execute("SELECT id, name, avg_embedding FROM people")
+        return self.cursor.fetchall()
+
+    def update_embedding(self, person_id, avg_embedding_bytes):
+        self.cursor.execute(
+            "UPDATE people SET avg_embedding = %s WHERE id = %s",
+            (avg_embedding_bytes, person_id)
+        )
+        self.conn.commit()

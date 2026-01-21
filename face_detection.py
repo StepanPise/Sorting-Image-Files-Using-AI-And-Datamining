@@ -108,5 +108,5 @@ class FaceDetection:
         ])
         face_tensor = transform(face_img).unsqueeze(0)  # [1,3,160,160]
         with torch.no_grad():
-            embedding = resnet(face_tensor)  # [1,512]
+            embedding = self.resnet(face_tensor)  # [1,512]
         return embedding.squeeze(0).numpy()  # 512-dim vector
