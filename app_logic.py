@@ -1,7 +1,6 @@
 from pathlib import Path
 from PIL import Image, ImageOps
 import json
-import time
 
 from db_setup import Database
 from metadata_handle import PhotoMetadata
@@ -31,9 +30,9 @@ class PhotoController:
         # 2. Face detection
         if detect_faces:
             self.face_detector.process_faces(input_folder)
-            self.face_clustering.assign_person_ids()
+            self.face_clustering.resolve_identities()
 
-    def _scan_metadata(self, input_folder: Path):
+    def _scan_metadata(self, input_folder):
         for path in input_folder.iterdir():
             if path.is_file() and path.suffix.lower() in [".jpg", ".jpeg", ".png"]:
                 filename = path.name

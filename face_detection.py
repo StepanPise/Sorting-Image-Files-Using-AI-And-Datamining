@@ -15,7 +15,17 @@ class FaceDetection:
     def __init__(self, photo_repo, face_repo):
         self.photo_repo = photo_repo
         self.face_repo = face_repo
+
+        # Load pre-trained Face Recognition model
         self.resnet = InceptionResnetV1(pretrained='vggface2').eval()
+
+        # Image Preprocessing transformations for RetinaFace
+        self.transform = transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.Resize((160, 160)),
+            transforms.ToTensor(),
+            transforms.Normalize([0.5], [0.5])
+        ])
 
     def process_faces(self, input_folder: Path):
         image_paths = [
@@ -44,17 +54,17 @@ class FaceDetection:
         return rgb_image, faces
 
     def process_photo(self, img_path: Path):
+
+        # Check if photo exists in DB (REDUNDANT?!)
         file_hash = self.compute_hash(img_path)
-
         row = self.photo_repo.get_by_hash(file_hash)
-
         if not row:
             print(f"{img_path.name}: Photo not found in DB, skipping.")
             return
 
+        # Check if photo already analyzed
         photo_id = row["id"]
         already_analyzed = row["already_analyzed"]
-
         if already_analyzed:
             print(f"{img_path.name}: Already analyzed, skipping.")
             return
@@ -62,6 +72,7 @@ class FaceDetection:
         try:
             rgb_image, faces = self.analyze_image(img_path)
 
+            # No faces found
             if not faces:
                 print(f"{img_path.name}: No faces found")
                 self.photo_repo.mark_analyzed(photo_id)
@@ -69,13 +80,28 @@ class FaceDetection:
 
             print(f"{img_path.name}: Faces found: {list(faces.keys())}")
 
+            # faces = {
+            #     "face_1": {
+            #         "facial_area": [10, 20, 110, 120]
+            #     },
+            #     "face_2": {
+            #         "facial_area": [200, 50, 300, 150]
+            #     }
+            # }
+
+            # FOR EVERY FACE IN IMAGE
             for key, face in faces.items():
                 x1, y1, x2, y2 = face["facial_area"]
+
+                # Extract face image
                 face_img = rgb_image[y1:y2, x1:x2]
+
                 face_coords = json.dumps(
                     [[int(x1), int(y1), int(x2), int(y2)]])
+
                 face_encoding = self.compute_embedding(face_img)
 
+                # Add face to DB (photo with face, embeding for img comparison when clustering, face coords for thumbnail)
                 self.face_repo.add(
                     photo_id, face_encoding.tobytes(), face_coords)
 
@@ -99,14 +125,8 @@ class FaceDetection:
         """
         face_img = RGB numpy array
         """
-        import torchvision.transforms as transforms
-        transform = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.Resize((160, 160)),
-            transforms.ToTensor(),
-            transforms.Normalize([0.5], [0.5])
-        ])
-        face_tensor = transform(face_img).unsqueeze(0)  # [1,3,160,160]
+
+        face_tensor = self.transform(face_img).unsqueeze(0)  # [1,3,160,160]
         with torch.no_grad():
             embedding = self.resnet(face_tensor)  # [1,512]
         return embedding.squeeze(0).numpy()  # 512-dim vector
