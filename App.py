@@ -1,6 +1,7 @@
 import customtkinter as ctk
 from tkinter import filedialog
 from PIL import Image, ImageDraw
+import threading
 
 from app_logic import PhotoController
 
@@ -45,9 +46,13 @@ class PhotoApp(ctk.CTk):
             self, textvariable=self.selected_folder, text_color="gray")
         self.lbl_folder.pack()
 
+        # Middle frame
+        middle_frame = ctk.CTkFrame(self)
+        middle_frame.pack(pady=20, padx=20, fill="x")
+
         # Scrollable list of people
         self.scroll_frame = ctk.CTkScrollableFrame(
-            self, label_text="Found People")
+            middle_frame, label_text="Found People")
         self.scroll_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
         # Export button (not implemented)
@@ -59,8 +64,14 @@ class PhotoApp(ctk.CTk):
         if folder:
             self.selected_folder.set(folder)
             print("Starting analysis...")
-            self.controller.analyze_folder(
-                folder, detect_faces=self.detect_faces_enabled.get())
+
+            threading.Thread(
+                target=self.controller.analyze_folder,
+                args=(folder,),
+                kwargs={"detect_faces": self.detect_faces_enabled.get()},
+                daemon=True
+            ).start()
+
             print("Done.")
             self.refresh_people_list()
 

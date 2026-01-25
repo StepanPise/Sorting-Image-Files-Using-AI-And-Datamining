@@ -10,6 +10,7 @@ class FaceClustering:
         self.person_repo = person_repo
 
     def resolve_identities(self):
+        print("CLUSTERING: Starting clustering process...")
         faces = self._load_faces()
 
         if not faces:
@@ -34,6 +35,7 @@ class FaceClustering:
         self._update_faces_with_person_ids(
             face_ids, cluster_ids, cluster_id_to_person_id)
 
+        print("CLUSTERING: Clustering process completed.")
         print(f"CLUSTERING: Processed {len(face_ids)} faces.")
 
     def _load_faces(self):

@@ -7,8 +7,6 @@ from retinaface import RetinaFace
 from facenet_pytorch import InceptionResnetV1
 import torchvision.transforms as transforms
 
-import concurrent.futures
-
 
 class FaceDetection:
 
@@ -33,14 +31,12 @@ class FaceDetection:
             if p.is_file() and p.suffix.lower() in [".jpg", ".jpeg", ".png"]
         ]
 
-        # with concurrent.futures.ProcessPoolExecutor() as executor:
-        #     executor.map(process_photo, image_paths)
+        photo_count = len(image_paths)
 
-        # with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-        #     list(executor.map(process_photo, image_paths))
-
-        for img_path in image_paths:
+        for i, img_path in enumerate(image_paths):
             self.process_photo(img_path)
+
+            callback = (i+1/photo_count) * 100
 
     def analyze_image(self, img_path: Path):
         image = cv2.imread(str(img_path))

@@ -20,8 +20,10 @@ class PhotoController:
 
         self.face_detector = FaceDetection(self.photo_repo, self.face_repo)
         self.face_clustering = FaceClustering(self.face_repo, self.person_repo)
+        # self.number_of_photos_in_folder = 0
 
     def analyze_folder(self, folder_path, detect_faces=True):
+        # self.number_of_photos_in_folder = 0
         input_folder = Path(folder_path)
 
         # 1. Get metadata
@@ -54,6 +56,8 @@ class PhotoController:
                         location_data=location_data, time_data=time_data,
                         width=width, height=height
                     )
+
+                # self.number_of_photos_in_folder += 1
 
     def get_person_thumbnail(self, person_id):
         rows = self.face_repo.get_faces_by_person_id(person_id)
