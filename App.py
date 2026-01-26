@@ -32,9 +32,9 @@ class PhotoApp(ctk.CTk):
         top_frame.pack(pady=20, padx=20, fill="x")
 
         # Top frame item 1
-        self.btn_select = ctk.CTkButton(
+        self.btn_select_folder = ctk.CTkButton(
             top_frame, text="Select Folder", command=self.choose_folder)
-        self.btn_select.pack(side="left", padx=10)
+        self.btn_select_folder.pack(side="left", padx=10)
 
         # Top frame item 2
         self.switch_detect = ctk.CTkSwitch(
@@ -70,8 +70,8 @@ class PhotoApp(ctk.CTk):
             self.selected_folder.set(folder)
             print("Starting analysis...")
 
-            self.progress_bar.set(0)  # mozna pizut metodu
-
+            self.progress_bar.set(0)
+            self.btn_select_folder.configure(state="disabled")
             threading.Thread(
                 target=self.run_folder_analysis_with_seperate_thread,
                 args=(folder,),
@@ -88,6 +88,7 @@ class PhotoApp(ctk.CTk):
 
         print("Done.")
         self.after(0, lambda: self.refresh_people_list())
+        self.btn_select_folder.configure(state="enabled")
 
     def refresh_people_list(self):
         for widget in self.scroll_frame.winfo_children():
