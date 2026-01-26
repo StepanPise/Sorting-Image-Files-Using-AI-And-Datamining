@@ -36,7 +36,8 @@ class FaceDetection:
         for i, img_path in enumerate(image_paths):
             self.process_photo(img_path)
 
-            callback = (i+1/photo_count) * 100
+            percentil = (i+1/photo_count)
+            # progress_callback(percentil)
 
     def analyze_image(self, img_path: Path):
         image = cv2.imread(str(img_path))

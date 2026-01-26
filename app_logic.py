@@ -22,7 +22,7 @@ class PhotoController:
         self.face_clustering = FaceClustering(self.face_repo, self.person_repo)
         # self.number_of_photos_in_folder = 0
 
-    def analyze_folder(self, folder_path, detect_faces=True):
+    def analyze_folder(self, folder_path, detect_faces=True, callback=None):
         # self.number_of_photos_in_folder = 0
         input_folder = Path(folder_path)
 

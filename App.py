@@ -41,18 +41,23 @@ class PhotoApp(ctk.CTk):
             top_frame, text="Detect Faces", variable=self.detect_faces_enabled)
         self.switch_detect.pack(side="left", padx=10)
 
-        # Selected folder label
+        # Middle frame
+        # middle_frame = ctk.CTkFrame(self)
+        # middle_frame.pack(pady=20, padx=20, fill="x")
+
+        # Selected folder string
         self.lbl_folder = ctk.CTkLabel(
             self, textvariable=self.selected_folder, text_color="gray")
         self.lbl_folder.pack()
 
-        # Middle frame
-        middle_frame = ctk.CTkFrame(self)
-        middle_frame.pack(pady=20, padx=20, fill="x")
+        # Progress bar
+        self.progress_bar = ctk.CTkProgressBar(self, width=400)
+        self.progress_bar.set(0)
+        self.progress_bar.pack()
 
         # Scrollable list of people
         self.scroll_frame = ctk.CTkScrollableFrame(
-            middle_frame, label_text="Found People")
+            self, label_text="Found People")
         self.scroll_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
         # Export button (not implemented)
@@ -65,15 +70,24 @@ class PhotoApp(ctk.CTk):
             self.selected_folder.set(folder)
             print("Starting analysis...")
 
+            self.progress_bar.set(0)  # mozna pizut metodu
+
             threading.Thread(
-                target=self.controller.analyze_folder,
+                target=self.run_folder_analysis_with_seperate_thread,
                 args=(folder,),
-                kwargs={"detect_faces": self.detect_faces_enabled.get()},
                 daemon=True
             ).start()
 
-            print("Done.")
-            self.refresh_people_list()
+    def run_folder_analysis_with_seperate_thread(self, folder):
+
+        self.controller.analyze_folder(
+            folder,
+            detect_faces=self.detect_faces_enabled.get(),
+            callback=self.update_progress_bar
+        )
+
+        print("Done.")
+        self.after(0, lambda: self.refresh_people_list())
 
     def refresh_people_list(self):
         for widget in self.scroll_frame.winfo_children():
@@ -131,6 +145,11 @@ class PhotoApp(ctk.CTk):
     def on_closing(self):
         self.controller.close()
         self.destroy()
+
+    def update_progress_bar(self, percent):
+        # THREAD SAFE - another thread cannot update GUI directly
+        self.after(0, lambda: self.progress_bar.set(percent))
+        print(f"Teď posouvám progress bar na {percent*100}%")
 
 
 if __name__ == "__main__":
