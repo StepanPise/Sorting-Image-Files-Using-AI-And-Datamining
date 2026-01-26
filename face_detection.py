@@ -25,19 +25,8 @@ class FaceDetection:
             transforms.Normalize([0.5], [0.5])
         ])
 
-    def process_faces(self, input_folder: Path):
-        image_paths = [
-            p for p in input_folder.iterdir()
-            if p.is_file() and p.suffix.lower() in [".jpg", ".jpeg", ".png"]
-        ]
-
-        photo_count = len(image_paths)
-
-        for i, img_path in enumerate(image_paths):
-            self.process_photo(img_path)
-
-            percentil = (i+1/photo_count)
-            # progress_callback(percentil)
+    def process_faces(self, img_path: Path):
+        self.process_photo(img_path)
 
     def analyze_image(self, img_path: Path):
         image = cv2.imread(str(img_path))

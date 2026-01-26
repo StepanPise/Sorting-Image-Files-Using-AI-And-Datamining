@@ -20,44 +20,62 @@ class PhotoController:
 
         self.face_detector = FaceDetection(self.photo_repo, self.face_repo)
         self.face_clustering = FaceClustering(self.face_repo, self.person_repo)
-        # self.number_of_photos_in_folder = 0
 
     def analyze_folder(self, folder_path, detect_faces=True, callback=None):
-        # self.number_of_photos_in_folder = 0
         input_folder = Path(folder_path)
 
-        # 1. Get metadata
-        self._scan_metadata(input_folder)
+        image_paths = [
+            p for p in input_folder.iterdir()
+            # ".webp"??
+            if p.is_file() and p.suffix.lower() in [".jpg", ".jpeg", ".png"]
+        ]
 
-        # 2. Face detection
+        total_photos = len(image_paths)
+
+        if total_photos == 0:
+            if callback:
+                callback(1.0, "No photos found")
+            return
+
+        for i, img_path in enumerate(image_paths):
+            # 1. Get metadata
+            self._scan_metadata(img_path)
+
+            # 2. Face detection
+            if detect_faces:
+                self.face_detector.process_faces(img_path)
+
+            if callback:
+                callback(i/total_photos, i/total_photos)
+
+        # 2. Face clustering
         if detect_faces:
-            self.face_detector.process_faces(input_folder)
             self.face_clustering.resolve_identities()
 
-    def _scan_metadata(self, input_folder):
-        for path in input_folder.iterdir():
-            if path.is_file() and path.suffix.lower() in [".jpg", ".jpeg", ".png"]:
-                filename = path.name
-                path_str = str(path)
-                hash_val = self.face_detector.compute_hash(path)
-                time_data = PhotoMetadata.get_date(path)
-                location_data = PhotoMetadata.get_location(path)
-                width, height = PhotoMetadata.get_size(path)
+        # Keep if callbacks??
+        if callback:
+            callback(1.0, "Done!")
 
-                # Check if photo with this hash exists to prevent duplication
-                exists = self.photo_repo.get_by_hash(hash_val)
+    def _scan_metadata(self, path):
+        filename = path.name
+        path_str = str(path)
+        hash_val = self.face_detector.compute_hash(path)
+        time_data = PhotoMetadata.get_date(path)
+        location_data = PhotoMetadata.get_location(path)
+        width, height = PhotoMetadata.get_size(path)
 
-                if exists:
-                    self.photo_repo.update_photo(
-                        photo_id=exists["id"], path=path_str, filename=filename)
-                else:
-                    self.photo_repo.insert_photo(
-                        path=path_str, filename=filename, hash=hash_val,
-                        location_data=location_data, time_data=time_data,
-                        width=width, height=height
-                    )
+        # Check if photo with this hash exists to prevent duplication
+        exists = self.photo_repo.get_by_hash(hash_val)
 
-                # self.number_of_photos_in_folder += 1
+        if exists:
+            self.photo_repo.update_photo(
+                photo_id=exists["id"], path=path_str, filename=filename)
+        else:
+            self.photo_repo.insert_photo(
+                path=path_str, filename=filename, hash=hash_val,
+                location_data=location_data, time_data=time_data,
+                width=width, height=height
+            )
 
     def get_person_thumbnail(self, person_id):
         rows = self.face_repo.get_faces_by_person_id(person_id)

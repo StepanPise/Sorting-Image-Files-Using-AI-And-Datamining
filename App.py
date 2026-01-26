@@ -146,10 +146,11 @@ class PhotoApp(ctk.CTk):
         self.controller.close()
         self.destroy()
 
-    def update_progress_bar(self, percent):
+    def update_progress_bar(self, percent, message=""):
         # THREAD SAFE - another thread cannot update GUI directly
         self.after(0, lambda: self.progress_bar.set(percent))
-        print(f"Teď posouvám progress bar na {percent*100}%")
+        print(
+            f"Progress = {percent*100}%, message = {message}")
 
 
 if __name__ == "__main__":
