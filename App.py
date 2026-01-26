@@ -27,42 +27,63 @@ class PhotoApp(ctk.CTk):
         self.refresh_people_list()
 
     def create_widgets(self):
+
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=0)  # top_frame
+        self.grid_rowconfigure(1, weight=0)  # lbl_folder
+        self.grid_rowconfigure(2, weight=0)  # status_frame
+        self.grid_rowconfigure(3, weight=1)  # scroll_frame
+        self.grid_rowconfigure(4, weight=0)  # btn_export
+
         # Top frame
         top_frame = ctk.CTkFrame(self)
-        top_frame.pack(pady=20, padx=20, fill="x")
+        top_frame.grid(row=0, column=0, padx=20, pady=20, sticky="ew")
+        top_frame.grid_columnconfigure(2, weight=1)
 
-        # Top frame item 1
+        # Top frame item 1 = Select folder button
         self.btn_select_folder = ctk.CTkButton(
             top_frame, text="Select Folder", command=self.choose_folder)
-        self.btn_select_folder.pack(side="left", padx=10)
+        self.btn_select_folder.grid(row=0, column=0, padx=10, sticky="w")
 
-        # Top frame item 2
+        # Top frame item 2 = Detect faces switch
         self.switch_detect = ctk.CTkSwitch(
             top_frame, text="Detect Faces", variable=self.detect_faces_enabled)
-        self.switch_detect.pack(side="left", padx=10)
-
-        # Middle frame
-        # middle_frame = ctk.CTkFrame(self)
-        # middle_frame.pack(pady=20, padx=20, fill="x")
+        self.switch_detect.grid(row=0, column=1, padx=10, sticky="w")
 
         # Selected folder string
         self.lbl_folder = ctk.CTkLabel(
-            self, textvariable=self.selected_folder, text_color="gray")
-        self.lbl_folder.pack()
+            self, textvariable=self.selected_folder, text_color="gray"
+        )
+        self.lbl_folder.grid(row=1, column=0, padx=20, sticky="w")
+
+        # Status frame for progress bar and status label
+        self.status_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.status_frame.grid(row=2, column=0, sticky="ew", padx=20, pady=5)
+        self.status_frame.grid_columnconfigure(0, weight=1)
 
         # Progress bar
-        self.progress_bar = ctk.CTkProgressBar(self, width=400)
+        self.progress_bar = ctk.CTkProgressBar(self.status_frame)
+        self.progress_bar.grid(row=0, column=0, sticky="ew", pady=(10, 5))
         self.progress_bar.set(0)
-        self.progress_bar.pack()
+
+        # Progress bar status label
+        self.lbl_status = ctk.CTkLabel(self.status_frame, text="")
+        self.lbl_status.grid(row=1, column=0, pady=(0, 10))
+
+        self.status_frame.grid_remove()
 
         # Scrollable list of people
         self.scroll_frame = ctk.CTkScrollableFrame(
-            self, label_text="Found People")
-        self.scroll_frame.pack(fill="both", expand=True, padx=10, pady=10)
+            self, label_text="Found People"
+        )
+        self.scroll_frame.grid(
+            row=3, column=0, padx=10, pady=10, sticky="nsew"
+        )
+        self.scroll_frame.grid_columnconfigure(0, weight=1)
 
         # Export button (not implemented)
         self.btn_export = ctk.CTkButton(self, text="Export Photos (TODO)")
-        self.btn_export.pack(pady=10)
+        self.btn_export.grid(row=4, column=0, pady=10)
 
     def choose_folder(self):
         folder = filedialog.askdirectory()
@@ -70,8 +91,15 @@ class PhotoApp(ctk.CTk):
             self.selected_folder.set(folder)
             print("Starting analysis...")
 
-            self.progress_bar.set(0)
+            # progress bar
+
+            self.status_frame.grid()
+
+            self.update_progress_bar(0, "Starting...")
+
             self.btn_select_folder.configure(state="disabled")
+            self.switch_detect.configure(state="disabled")
+
             threading.Thread(
                 target=self.run_folder_analysis_with_seperate_thread,
                 args=(folder,),
@@ -86,9 +114,14 @@ class PhotoApp(ctk.CTk):
             callback=self.update_progress_bar
         )
 
+        self.after(0, lambda: self.on_analysis_complete())
+
+    def on_analysis_complete(self):
         print("Done.")
-        self.after(0, lambda: self.refresh_people_list())
+        self.refresh_people_list()
         self.btn_select_folder.configure(state="enabled")
+        self.switch_detect.configure(state="enabled")
+        # self.status_frame.pack_forget()
 
     def refresh_people_list(self):
         for widget in self.scroll_frame.winfo_children():
@@ -96,10 +129,10 @@ class PhotoApp(ctk.CTk):
 
         people_data = self.controller.get_all_people()
 
-        for row in people_data:
-            self.create_person_row(row['id'], row['name'])
+        for i, row in enumerate(people_data):
+            self.create_person_row(row['id'], row['name'], row_index=i)
 
-    def create_person_row(self, person_id, person_name):
+    def create_person_row(self, person_id, person_name, row_index):
         pil_img = self.controller.get_person_thumbnail(person_id)
 
         if pil_img:
@@ -117,16 +150,18 @@ class PhotoApp(ctk.CTk):
         # Create row (frame) in scroll frame
         item_frame = ctk.CTkFrame(
             self.scroll_frame, fg_color=("gray85", "gray25"))
-        item_frame.pack(fill="x", padx=5, pady=5)
+        item_frame.grid(row=row_index, column=0, sticky="ew", padx=5, pady=5)
+        item_frame.grid_columnconfigure(
+            1, weight=1)
 
         # Create thumbnail in item frame
         if img_ctk:
             lbl_img = ctk.CTkLabel(item_frame, image=img_ctk, text="")
-            lbl_img.pack(side="left", padx=5, pady=5)
+            lbl_img.grid(row=0, column=0, padx=5, pady=5)
 
         # Create name in item frame
         entry_name = ctk.CTkEntry(item_frame, placeholder_text=person_name)
-        entry_name.pack(side="left", padx=10, fill="x", expand=True)
+        entry_name.grid(row=0, column=1, padx=10, sticky="ew")
 
         def save_action(event=None):
             new_name = entry_name.get().strip()
@@ -141,7 +176,7 @@ class PhotoApp(ctk.CTk):
         # Create Save button in item frame
         btn_save = ctk.CTkButton(item_frame, text="💾",
                                  width=40, command=save_action)
-        btn_save.pack(side="left", padx=5)
+        btn_save.grid(row=0, column=2, padx=5)
 
     def on_closing(self):
         self.controller.close()
@@ -150,8 +185,14 @@ class PhotoApp(ctk.CTk):
     def update_progress_bar(self, percent, message=""):
         # THREAD SAFE - another thread cannot update GUI directly
         self.after(0, lambda: self.progress_bar.set(percent))
-        print(
-            f"Progress = {percent*100}%, message = {message}")
+
+        if message:
+            if isinstance(message, (int, float)):
+                text = f"{message*100:.0f}%"
+            else:
+                text = str(message)
+
+            self.after(0, lambda: self.lbl_status.configure(text=text))
 
 
 if __name__ == "__main__":

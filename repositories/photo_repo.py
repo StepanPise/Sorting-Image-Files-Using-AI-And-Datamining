@@ -36,3 +36,10 @@ class PhotoRepository(BaseRepository):
             (photo_id,)
         )
         self.conn.commit()
+
+    # def mark_scanned(self, photo_id):
+    #     self.cursor.execute(
+    #         "UPDATE photos SET metadata_scanned = 1 WHERE id = %s",
+    #         (photo_id,)
+    #     )
+    #     self.conn.commit()
