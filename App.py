@@ -186,8 +186,13 @@ class PhotoApp(ctk.CTk):
 
     def on_closing(self):
 
-        self.sys_prefs_repo.save_pref("window_width", self.winfo_width())
-        self.sys_prefs_repo.save_pref("window_height", self.winfo_height())
+        scaling = self._get_window_scaling()
+        width = int(self.winfo_width() / scaling)
+        height = int(self.winfo_height() / scaling)
+
+        self.sys_prefs_repo.save_pref("window_width", width)
+        self.sys_prefs_repo.save_pref("window_height", height)
+
         self.sys_prefs_repo.save_pref(
             "face_detection_enabled", self.detect_faces_enabled.get())
 
