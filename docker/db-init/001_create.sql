@@ -42,3 +42,11 @@ CREATE TABLE IF NOT EXISTS faces (
     FOREIGN KEY (photo_id) REFERENCES photos(id) ON DELETE CASCADE,
     FOREIGN KEY (person_id) REFERENCES people(id) ON DELETE SET NULL
 );
+
+-- SYSTEM PREFS
+CREATE TABLE IF NOT EXISTS system_prefs (
+    key TEXT PRIMARY KEY,
+    value TEXT
+);
+
+
