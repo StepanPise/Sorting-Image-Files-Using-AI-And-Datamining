@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS faces (
 );
 
 -- SYSTEM PREFS
-CREATE TABLE IF NOT EXISTS system_prefs (
+CREATE TABLE IF NOT EXISTS system_preferences (
     key TEXT PRIMARY KEY,
     value TEXT
 );

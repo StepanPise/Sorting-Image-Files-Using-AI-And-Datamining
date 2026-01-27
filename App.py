@@ -4,6 +4,7 @@ from PIL import Image, ImageDraw
 import threading
 
 from app_logic import PhotoController
+from repositories.sys_prefs_repo import SystemPrefsRepository
 
 ctk.set_appearance_mode("system")
 ctk.set_default_color_theme("blue")
@@ -14,15 +15,20 @@ class PhotoApp(ctk.CTk):
         super().__init__()
 
         self.controller = PhotoController()
+        self.sys_prefs_repo = SystemPrefsRepository(self.controller.db)
 
-        self.geometry("500x600")
+        self.window_width = 500
+        self.window_height = 600
+
+        self.load_user_preferences()
+
+        self.geometry(f"{self.window_width}x{self.window_height}")
         self.title("AI Photo Manager")
 
         self.selected_folder = ctk.StringVar()
         self.detect_faces_enabled = ctk.BooleanVar(value=True)
 
         self.create_widgets()
-
         # Load people on startup (if any exist in DB)
         self.refresh_people_list()
 
@@ -193,6 +199,15 @@ class PhotoApp(ctk.CTk):
                 text = str(message)
 
             self.after(0, lambda: self.lbl_status.configure(text=text))
+
+    def load_user_preferences(self):
+        width = self.sys_prefs_repo.load_pref("window_width")
+        if (width != None and width > 0):
+            self.window_width = width
+
+        height = self.sys_prefs_repo.load_pref("window_height")
+        if (height != None and height > 0):
+            self.window_height = height
 
 
 if __name__ == "__main__":
