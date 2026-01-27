@@ -19,6 +19,7 @@ class PhotoApp(ctk.CTk):
 
         self.window_width = 500
         self.window_height = 600
+        self.detect_faces_enabled = ctk.BooleanVar(value=True)
 
         self.load_user_preferences()
 
@@ -26,7 +27,6 @@ class PhotoApp(ctk.CTk):
         self.title("AI Photo Manager")
 
         self.selected_folder = ctk.StringVar()
-        self.detect_faces_enabled = ctk.BooleanVar(value=True)
 
         self.create_widgets()
         # Load people on startup (if any exist in DB)
@@ -185,6 +185,12 @@ class PhotoApp(ctk.CTk):
         btn_save.grid(row=0, column=2, padx=5)
 
     def on_closing(self):
+
+        self.sys_prefs_repo.save_pref("window_width", self.winfo_width())
+        self.sys_prefs_repo.save_pref("window_height", self.winfo_height())
+        self.sys_prefs_repo.save_pref(
+            "face_detection_enabled", self.detect_faces_enabled.get())
+
         self.controller.close()
         self.destroy()
 
@@ -201,6 +207,7 @@ class PhotoApp(ctk.CTk):
             self.after(0, lambda: self.lbl_status.configure(text=text))
 
     def load_user_preferences(self):
+
         width = self.sys_prefs_repo.load_pref("window_width")
         if (width != None and width > 0):
             self.window_width = width
@@ -208,6 +215,11 @@ class PhotoApp(ctk.CTk):
         height = self.sys_prefs_repo.load_pref("window_height")
         if (height != None and height > 0):
             self.window_height = height
+
+        detection_button_state = self.sys_prefs_repo.load_pref(
+            "face_detection_enabled")
+        if (detection_button_state != None):
+            self.detect_faces_enabled.set(detection_button_state)
 
 
 if __name__ == "__main__":

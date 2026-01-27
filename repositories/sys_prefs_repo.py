@@ -9,17 +9,21 @@ class SystemPrefsRepository(BaseRepository):
             VALUES (%s, %s)
             ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
         """, (key, str(value)))
-        self.connection.commit()
+        self.conn.commit()
 
     def load_pref(self, key, default=None):
         self.cursor.execute(
             "SELECT value FROM system_preferences WHERE key=%s", (key,))
         res = self.cursor.fetchone()
+
         if res is None:
             return default
-        val = res[0]
+
+        val = res["value"]
+
         if val.lower() in ("true", "false"):
             return val.lower() == "true"
+
         try:
             return int(val)
         except ValueError:
