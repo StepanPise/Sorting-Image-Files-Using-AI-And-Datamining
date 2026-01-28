@@ -32,7 +32,8 @@ class SystemPrefsRepository(BaseRepository):
             except ValueError:
                 return val
 
-# face_detection = bool
+# face_detection_enabled = bool
 # window_width = int
 # window_height = int
+# fullscreen_enabled = bool
 # ....

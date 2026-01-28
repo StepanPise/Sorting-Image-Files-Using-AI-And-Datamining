@@ -29,7 +29,6 @@ class PhotoApp(ctk.CTk):
         self.selected_folder = ctk.StringVar()
 
         self.create_widgets()
-        # Load people on startup (if any exist in DB)
         self.refresh_people_list()
 
     def create_widgets(self):
@@ -38,8 +37,9 @@ class PhotoApp(ctk.CTk):
         self.grid_rowconfigure(0, weight=0)  # top_frame
         self.grid_rowconfigure(1, weight=0)  # lbl_folder
         self.grid_rowconfigure(2, weight=0)  # status_frame
-        self.grid_rowconfigure(3, weight=1)  # scroll_frame
-        self.grid_rowconfigure(4, weight=0)  # btn_export
+        self.grid_rowconfigure(3, weight=1)  # scroll_frame_people_people
+        self.grid_rowconfigure(4, weight=1)  # scroll_frame_photos
+        self.grid_rowconfigure(5, weight=0)  # btn_export
 
         # Top frame
         top_frame = ctk.CTkFrame(self)
@@ -79,17 +79,26 @@ class PhotoApp(ctk.CTk):
         self.status_frame.grid_remove()
 
         # Scrollable list of people
-        self.scroll_frame = ctk.CTkScrollableFrame(
+        self.scroll_frame_people = ctk.CTkScrollableFrame(
             self, label_text="Found People"
         )
-        self.scroll_frame.grid(
+        self.scroll_frame_people.grid(
             row=3, column=0, padx=10, pady=10, sticky="nsew"
         )
-        self.scroll_frame.grid_columnconfigure(0, weight=1)
+        self.scroll_frame_people.grid_columnconfigure(0, weight=1)
+
+        # Scrollable list of photos
+        self.scroll_frame_photos = ctk.CTkScrollableFrame(
+            self, label_text="Photos"
+        )
+        self.scroll_frame_photos .grid(
+            row=4, column=0, padx=10, pady=10, sticky="nsew"
+        )
+        self.scroll_frame_photos.grid_columnconfigure(0, weight=1)
 
         # Export button (not implemented)
         self.btn_export = ctk.CTkButton(self, text="Export Photos (TODO)")
-        self.btn_export.grid(row=4, column=0, pady=10)
+        self.btn_export.grid(row=5, column=0, pady=10)
 
     def choose_folder(self):
         folder = filedialog.askdirectory()
@@ -130,7 +139,7 @@ class PhotoApp(ctk.CTk):
         # self.status_frame.pack_forget()
 
     def refresh_people_list(self):
-        for widget in self.scroll_frame.winfo_children():
+        for widget in self.scroll_frame_people.winfo_children():
             widget.destroy()
 
         people_data = self.controller.get_all_people()
@@ -155,7 +164,7 @@ class PhotoApp(ctk.CTk):
 
         # Create row (frame) in scroll frame
         item_frame = ctk.CTkFrame(
-            self.scroll_frame, fg_color=("gray85", "gray25"))
+            self.scroll_frame_people, fg_color=("gray85", "gray25"))
         item_frame.grid(row=row_index, column=0, sticky="ew", padx=5, pady=5)
         item_frame.grid_columnconfigure(
             1, weight=1)
@@ -186,16 +195,22 @@ class PhotoApp(ctk.CTk):
 
     def on_closing(self):
 
+        # SAVE WINDOW H AND W STATE
         scaling = self._get_window_scaling()
         width = int(self.winfo_width() / scaling)
         height = int(self.winfo_height() / scaling)
-
         self.sys_prefs_repo.save_pref("window_width", width)
         self.sys_prefs_repo.save_pref("window_height", height)
 
+        # # SAVE FULLSCREEN STATE
+        # self.sys_prefs_repo.save_pref(
+        #     "fullscreen_enabled", self.attributes("-fullscreen"))
+
+        # SAVE face_detect_button STATE
         self.sys_prefs_repo.save_pref(
             "face_detection_enabled", self.detect_faces_enabled.get())
 
+        # CLOSE DB
         self.controller.close()
         self.destroy()
 
