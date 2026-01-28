@@ -6,6 +6,10 @@ import threading
 from app_logic import PhotoController
 from repositories.sys_prefs_repo import SystemPrefsRepository
 
+from structures import FilterCriteria
+from ui.gallery import PhotoGallery
+from ui.sidebar import PeopleSidebar
+
 ctk.set_appearance_mode("system")
 ctk.set_default_color_theme("blue")
 
