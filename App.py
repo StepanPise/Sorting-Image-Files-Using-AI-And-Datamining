@@ -91,23 +91,15 @@ class PhotoApp(ctk.CTk):
         )
         self.sidebar.grid_columnconfigure(0, weight=1)
 
-        # # Photo gallery
-        # self.gallery = PhotoGallery(
-        #     self,
-        #     controller=self.controller,
-        # )
-        # self.gallery.grid(
-        #     row=4, column=0, padx=10, pady=10, sticky="nsew"
-        # )
-
-        # Scrollable list of photos
-        self.scroll_frame_photos = ctk.CTkScrollableFrame(
-            self, label_text="Photos"
+        # Photo gallery
+        self.gallery = PhotoGallery(
+            self,
+            controller=self.controller,
         )
-        self.scroll_frame_photos .grid(
+        self.gallery.grid(
             row=4, column=0, padx=10, pady=10, sticky="nsew"
         )
-        self.scroll_frame_photos.grid_columnconfigure(0, weight=1)
+        self.gallery.grid_columnconfigure(0, weight=1)
 
         # Export button (not implemented)
         self.btn_export = ctk.CTkButton(self, text="Export Photos (TODO)")
