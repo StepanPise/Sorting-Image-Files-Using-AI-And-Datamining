@@ -17,6 +17,7 @@ class PhotoApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
+        self.is_fullscreen = False
         self.controller = PhotoController()
         self.sys_prefs_repo = SystemPrefsRepository(self.controller.db)
         self.sidebar = None
@@ -28,6 +29,10 @@ class PhotoApp(ctk.CTk):
         self.load_user_preferences()
 
         self.geometry(f"{self.window_width}x{self.window_height}")
+
+        if self.is_fullscreen:
+            self.after(100, lambda: self.state("zoomed"))
+
         self.title("AI Photo Manager")
 
         self.selected_folder = ctk.StringVar()
@@ -157,13 +162,19 @@ class PhotoApp(ctk.CTk):
         self.sys_prefs_repo.save_pref("window_width", width)
         self.sys_prefs_repo.save_pref("window_height", height)
 
-        # # SAVE FULLSCREEN STATE
-        # self.sys_prefs_repo.save_pref(
-        #     "fullscreen_enabled", self.attributes("-fullscreen"))
+        # SAVE FULLSCREEN STATE
+        self.sys_prefs_repo.save_pref(
+            "fullscreen", self.attributes("-fullscreen"))
 
         # SAVE face_detect_button STATE
         self.sys_prefs_repo.save_pref(
             "face_detection_enabled", self.detect_faces_enabled.get())
+
+        # Save fullscreen status
+        if (self.state() == "zoomed"):
+            self.sys_prefs_repo.save_pref("fullscreen", True)
+        else:
+            self.sys_prefs_repo.save_pref("fullscreen", False)
 
         # CLOSE DB
         self.controller.close()
@@ -195,6 +206,10 @@ class PhotoApp(ctk.CTk):
             "face_detection_enabled")
         if (detection_button_state != None):
             self.detect_faces_enabled.set(detection_button_state)
+
+        is_full = self.sys_prefs_repo.load_pref(
+            "fullscreen")
+        self.is_fullscreen = is_full
 
 
 if __name__ == "__main__":
