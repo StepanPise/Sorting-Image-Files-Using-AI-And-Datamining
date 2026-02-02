@@ -3,9 +3,10 @@ from PIL import Image, ImageDraw
 
 
 class PeopleSidebar(ctk.CTkFrame):
-    def __init__(self, master, controller, **kwargs):
+    def __init__(self, master, controller, callback, **kwargs):
         super().__init__(master, **kwargs)
         self.controller = controller
+        self.callback = callback
 
         self.selected_ids = set()
         self.person_rows = {}
@@ -98,4 +99,5 @@ class PeopleSidebar(ctk.CTkFrame):
         if person_id in self.person_rows:
             self.person_rows[person_id].configure(fg_color=new_color)
 
+        self.callback(self.selected_ids)
         # print(f"IDS: {self.selected_ids}")

@@ -48,17 +48,17 @@ class PhotoRepository(BaseRepository):
         if criteria.person_ids:
             joins.append("JOIN faces f ON p.id = f.photo_id")
 
-            placeholders = ",".join(["?"] * len(criteria.person_ids))
+            placeholders = ",".join(["%s"] * len(criteria.person_ids))
 
             conditions.append(f"f.person_id IN ({placeholders})")
             params.extend(criteria.person_ids)
 
         if criteria.date_from:
-            conditions.append("p.time_data >= ?")
+            conditions.append("p.time_data >= %s")
             params.append(criteria.date_from)
 
         if criteria.date_to:
-            conditions.append("p.time_data <= ?")
+            conditions.append("p.time_data <= %s")
             params.append(criteria.date_to)
 
         if joins:

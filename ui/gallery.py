@@ -80,3 +80,6 @@ class PhotoGallery(ctk.CTkFrame):
                                     width=IMG_SIZE, height=IMG_SIZE)
 
             btn.place(relx=0.5, rely=0.5, anchor="center")
+
+    def update(self, photos):
+        print(f"heeeeeeeeereee it issss, photos for gallery: {photos}")

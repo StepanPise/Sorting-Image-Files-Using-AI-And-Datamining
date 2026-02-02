@@ -145,3 +145,7 @@ class PhotoController:
 
     def update_person_name(self, person_id, new_name):
         self.person_repo.update_name(person_id, new_name)
+
+    def get_photos_from_repo_for_gallery(self, filtercrits):
+        photos = self.photo_repo.get_photos(filtercrits)
+        return photos

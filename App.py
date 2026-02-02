@@ -22,6 +22,7 @@ class PhotoApp(ctk.CTk):
         self.sys_prefs_repo = SystemPrefsRepository(self.controller.db)
         self.sidebar = None
         self.gallery = None
+        self.criteria = FilterCriteria()
 
         self.window_width = 500
         self.window_height = 600
@@ -98,7 +99,7 @@ class PhotoApp(ctk.CTk):
 
         # Scrollable list of people NEW
         self.sidebar = PeopleSidebar(
-            self, self.controller
+            self, self.controller, callback=self.add_filter_criteria
         )
         self.sidebar.grid(
             row=3, column=0, padx=(10, 5), pady=10, sticky="nsew"
@@ -210,6 +211,12 @@ class PhotoApp(ctk.CTk):
         is_full = self.sys_prefs_repo.load_pref(
             "fullscreen")
         self.is_fullscreen = is_full
+
+    def add_filter_criteria(self, ids):
+        self.criteria.person_ids = list(ids)
+        photos = self.controller.get_photos_from_repo_for_gallery(
+            self.criteria)
+        self.gallery.update(photos)
 
 
 if __name__ == "__main__":
