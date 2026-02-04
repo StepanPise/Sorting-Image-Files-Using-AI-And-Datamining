@@ -16,10 +16,8 @@ class PhotoGallery(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        self.build_photo_grid()
-
     # FLEXBOX ISNT VIABLE IN CTK...
-    def build_photo_grid(self):
+    def build_photo_grid(self, photos_for_display):
         for widget in self.scroll_frame_photos.winfo_children():
             widget.destroy()
 
@@ -28,9 +26,10 @@ class PhotoGallery(ctk.CTkFrame):
         CARD_HEIGHT = 150
         IMG_SIZE = 140
 
-        photos = [{"path": "testS1/default.jpg", "id": i}
-                  for i in range(20)]
-        total_photos = len(photos)
+        # photos = [{"path": "testS1/default.jpg", "id": i}
+        #           for i in range(20)]
+
+        total_photos = len(photos_for_display)
 
         for i in range(total_photos):
             row = i // COLUMNS
@@ -49,7 +48,7 @@ class PhotoGallery(ctk.CTkFrame):
             card.grid(row=row, column=col, padx=10, pady=10)
             card.grid_propagate(False)  # Keep photo 150*150
 
-            path = photos[i]["path"]
+            path = photos_for_display[i].get('path')
 
             try:
                 pil_img = Image.open(path)
@@ -71,7 +70,7 @@ class PhotoGallery(ctk.CTkFrame):
                     hover_color="gray40",
                     width=IMG_SIZE,
                     height=IMG_SIZE,
-                    command=lambda p_id=photos[i]["id"]: print(
+                    command=lambda p_id=photos_for_display[i].get('id'): print(
                         f"idd:{p_id}")
                 )
 
@@ -82,4 +81,7 @@ class PhotoGallery(ctk.CTkFrame):
             btn.place(relx=0.5, rely=0.5, anchor="center")
 
     def update(self, photos):
-        print(f"heeeeeeeeereee it issss, photos for gallery: {photos}")
+        print(
+            f"heeeeeeeeereee it issss, photos for gallery: {(photos[0]).get('path') if photos else 'No photos'}")
+
+        self.build_photo_grid(photos)
