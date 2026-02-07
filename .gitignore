@@ -5,3 +5,5 @@ __pycache__/
 photo_ai.db
 db_test.py
 test.py
+test_location
+test_location_2

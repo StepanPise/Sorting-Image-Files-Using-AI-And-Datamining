@@ -69,7 +69,7 @@ class PhotoController:
 
         if exists:
             self.photo_repo.update_photo(
-                photo_id=exists["id"], path=path_str, filename=filename)
+                photo_id=exists["id"], path=path_str, filename=filename, location_data=location_data)
         else:
             self.photo_repo.insert_photo(
                 path=path_str, filename=filename, hash=hash_val,

@@ -49,7 +49,7 @@ class PhotoMetadata:
                 return city
             return None
         except:
-            return None
+            return print("Couldnt detect location data, No Internet! (Try again when connected to Internet)")
 
     @staticmethod
     def get_size(img_path: str) -> Tuple[Optional[int], Optional[int]]:

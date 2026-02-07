@@ -25,10 +25,21 @@ class PhotoRepository(BaseRepository):
         self.conn.commit()
 
     def update_photo(self, photo_id, **kwargs):
-        self.cursor.execute(
-            "UPDATE photos SET path=%s, filename=%s WHERE id=%s",
-            (kwargs["path"], kwargs["filename"], photo_id)
-        )
+
+        location_data = kwargs.get("location_data")
+
+        if (location_data != None):
+            self.cursor.execute(
+                "UPDATE photos SET path=%s, filename=%s, location_data=%s WHERE id=%s",
+                (kwargs["path"], kwargs["filename"],
+                 kwargs["location_data"], photo_id)
+            )
+        else:
+            self.cursor.execute(
+                "UPDATE photos SET path=%s, filename=%s WHERE id=%s",
+                (kwargs["path"], kwargs["filename"], photo_id)
+            )
+
         self.conn.commit()
 
     def mark_analyzed(self, photo_id):
