@@ -7,7 +7,8 @@ from repositories.sys_prefs_repo import SystemPrefsRepository
 
 from structures import FilterCriteria
 from ui.gallery import PhotoGallery
-from ui.sidebar import PeopleSidebar
+from ui.sidebar_people import PeopleSidebar
+from ui.sidebar_metadata import MetadataSidebar
 
 ctk.set_appearance_mode("system")
 ctk.set_default_color_theme("blue")
@@ -20,7 +21,7 @@ class PhotoApp(ctk.CTk):
         self.is_fullscreen = False
         self.controller = PhotoController()
         self.sys_prefs_repo = SystemPrefsRepository(self.controller.db)
-        self.sidebar = None
+        self.sidebar_people = None
         self.gallery = None
         self.criteria = FilterCriteria()
 
@@ -39,18 +40,18 @@ class PhotoApp(ctk.CTk):
         self.selected_folder = ctk.StringVar()
 
         self.create_widgets()
-        self.sidebar.refresh_people_list()
+        self.sidebar_people.refresh_people_list()
 
     def create_widgets(self):
 
-        self.grid_columnconfigure(0, weight=0, minsize=350)  # sidebar
+        self.grid_columnconfigure(0, weight=0, minsize=350)  # sidebar_people
         self.grid_columnconfigure(1, weight=1)  # gallery
 
         self.grid_rowconfigure(0, weight=0)  # top_frame
         self.grid_rowconfigure(1, weight=0)  # lbl_folder
         self.grid_rowconfigure(2, weight=0)  # status_frame
         self.grid_rowconfigure(3, weight=1)  # SCROLL FRAMES
-        self.grid_rowconfigure(5, weight=0)  # btn_export
+        self.grid_rowconfigure(4, weight=1)
 
         # Top frame
         top_frame = ctk.CTkFrame(self)
@@ -97,14 +98,22 @@ class PhotoApp(ctk.CTk):
 
         self.status_frame.grid_remove()
 
-        # Scrollable list of people NEW
-        self.sidebar = PeopleSidebar(
+        # People Sidebar
+        self.sidebar_people = PeopleSidebar(
             self, self.controller, callback=self.add_filter_criteria
         )
-        self.sidebar.grid(
+        self.sidebar_people.grid(
             row=3, column=0, padx=(10, 5), pady=10, sticky="nsew"
         )
-        self.sidebar.grid_columnconfigure(0, weight=1)
+        self.sidebar_people.grid_columnconfigure(0, weight=1)
+
+        # Metadata Sidebar
+        self.sidebar_metadata = MetadataSidebar(self, self.controller)
+
+        self.sidebar_metadata.grid(
+            row=4, column=0, padx=(10, 5), pady=10, sticky="nsew"
+        )
+        self.sidebar_metadata.grid_columnconfigure(0, weight=1)
 
         # Photo gallery
         self.gallery = PhotoGallery(
@@ -112,7 +121,7 @@ class PhotoApp(ctk.CTk):
             controller=self.controller,
         )
         self.gallery.grid(
-            row=3, column=1, padx=(5, 10), pady=10, sticky="nsew"
+            row=3, rowspan=2, column=1, padx=(5, 10), pady=10, sticky="nsew"
         )
         self.gallery.grid_columnconfigure(0, weight=1)
 
@@ -149,7 +158,7 @@ class PhotoApp(ctk.CTk):
 
     def on_analysis_complete(self):
         print("Done.")
-        self.sidebar.refresh_people_list()
+        self.sidebar_people.refresh_people_list()
         self.btn_select_folder.configure(state="enabled")
         self.switch_detect.configure(state="enabled")
         # self.status_frame.pack_forget()
