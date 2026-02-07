@@ -27,7 +27,7 @@ class PhotoMetadata:
         gps_lon_ref = tags.get("GPS GPSLongitudeRef")
 
         if not (gps_lat and gps_lat_ref and gps_lon and gps_lon_ref):
-            return None
+            return None, None
 
         def convert_to_degrees(value):
             d, m, s = [float(x.num)/float(x.den) for x in value.values]
@@ -46,8 +46,11 @@ class PhotoMetadata:
                 city = location.raw["address"].get("city") or \
                     location.raw["address"].get("town") or \
                     location.raw["address"].get("village")
-                return city
-            return None
+
+                country = location.raw["address"].get("country")
+
+                return city, country
+            return None, None
         except:
             return print("Couldnt detect location data, No Internet! (Try again when connected to Internet)")
 

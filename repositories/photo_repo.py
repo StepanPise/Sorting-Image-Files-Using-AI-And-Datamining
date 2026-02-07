@@ -16,23 +16,23 @@ class PhotoRepository(BaseRepository):
     def insert_photo(self, **kwargs):
         self.cursor.execute(
             """
-            INSERT INTO photos (path, filename, hash, location_data, time_data, width, height)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO photos (path, filename, hash, location_data_city, time_data, width, height, location_data_country)
+            VALUES (%s, %s, %s, %s, %s, %s, %s,%s)
             """,
-            (kwargs["path"], kwargs["filename"], kwargs["hash"], kwargs["location_data"],
-             kwargs["time_data"], kwargs["width"], kwargs["height"])
+            (kwargs["path"], kwargs["filename"], kwargs["hash"], kwargs["location_data_city"],
+             kwargs["time_data"], kwargs["width"], kwargs["height"], kwargs["location_data_country"])
         )
         self.conn.commit()
 
     def update_photo(self, photo_id, **kwargs):
 
-        location_data = kwargs.get("location_data")
+        location_data_city = kwargs.get("location_data_city")
 
-        if (location_data != None):
+        if (location_data_city != None):
             self.cursor.execute(
-                "UPDATE photos SET path=%s, filename=%s, location_data=%s WHERE id=%s",
+                "UPDATE photos SET path=%s, filename=%s, location_data_city=%s,location_data_country=%s  WHERE id=%s",
                 (kwargs["path"], kwargs["filename"],
-                 kwargs["location_data"], photo_id)
+                 kwargs["location_data_city"], kwargs["location_data_country"], photo_id)
             )
         else:
             self.cursor.execute(

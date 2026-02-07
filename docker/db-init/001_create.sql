@@ -5,7 +5,8 @@ CREATE TABLE IF NOT EXISTS photos (
     filename TEXT NOT NULL,
     hash TEXT UNIQUE NOT NULL,
     already_analyzed INTEGER DEFAULT 0,
-    location_data TEXT,
+    location_data_country TEXT,
+    location_data_city TEXT,
     time_data TEXT,
     width INTEGER,
     height INTEGER

@@ -16,7 +16,7 @@ class PhotoGallery(ctk.CTkFrame):
         self.grid_rowconfigure(1, weight=0)  # navigation
         self.grid_columnconfigure(0, weight=1)
 
-        # 1. SCROLL FRAME PHOOTS
+        # 1. SCROLL FRAME 5
         self.scroll_frame_photos = ctk.CTkScrollableFrame(
             self, label_text="Photos"
         )
