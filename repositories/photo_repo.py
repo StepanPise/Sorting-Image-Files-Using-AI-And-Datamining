@@ -84,7 +84,7 @@ class PhotoRepository(BaseRepository):
 
         return self.cursor.fetchall()
 
-    def get_location_tree(self):
+    def get_unique_locations(self):
         """
         RETURN example: { "Česko": ["Praha", "Brno"], "Německo": ["Berlín"] }
         """
@@ -92,7 +92,7 @@ class PhotoRepository(BaseRepository):
         self.cursor.execute("""
                 SELECT DISTINCT location_data_country, location_data_city 
                 FROM photos 
-                WHERE (location_data_country IS NOT NULL) and (location_data_city IS NOT NULL)
+                WHERE (location_data_country IS NOT NULL)
                 ORDER BY location_data_country ASC, location_data_city ASC
             """)
 
@@ -100,7 +100,11 @@ class PhotoRepository(BaseRepository):
 
         tree = {}
 
-        for country, city in rows:
+        for row in rows:
+
+            country = row['location_data_country']
+            city = row['location_data_city']
+
             # If country is not in the tree, add it with an empty list
             if country not in tree:
                 tree[country] = []

@@ -149,3 +149,6 @@ class PhotoController:
     def get_photos_from_repo_for_gallery(self, filtercrits):
         photos = self.photo_repo.get_photos(filtercrits)
         return photos
+
+    def load_location_tree(self):
+        return self.photo_repo.get_unique_locations()
