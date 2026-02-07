@@ -15,3 +15,10 @@ class MetadataSidebar(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self.scroll_frame_metadata.grid_columnconfigure(0, weight=1)
+
+        self.combo = ctk.CTkComboBox(
+            self)
+        self.combo.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
+
+    def prepare_locations(self):
+        self.combo.configure(values=["Praha", "Brno", "Ostrava", "Plzeň"])

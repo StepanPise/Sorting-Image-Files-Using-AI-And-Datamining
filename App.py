@@ -22,6 +22,7 @@ class PhotoApp(ctk.CTk):
         self.controller = PhotoController()
         self.sys_prefs_repo = SystemPrefsRepository(self.controller.db)
         self.sidebar_people = None
+        self.sidebar_metadata = None
         self.gallery = None
         self.criteria = FilterCriteria()
 
@@ -41,6 +42,7 @@ class PhotoApp(ctk.CTk):
 
         self.create_widgets()
         self.sidebar_people.refresh_people_list()
+        self.sidebar_metadata.prepare_locations()
 
     def create_widgets(self):
 
@@ -159,6 +161,8 @@ class PhotoApp(ctk.CTk):
     def on_analysis_complete(self):
         print("Done.")
         self.sidebar_people.refresh_people_list()
+        self.sidebar_metadata.prepare_locations()
+
         self.btn_select_folder.configure(state="enabled")
         self.switch_detect.configure(state="enabled")
         # self.status_frame.pack_forget()
