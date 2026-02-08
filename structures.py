@@ -12,10 +12,12 @@ class FilterCriteria:
 
     person_ids: List[int] = field(default_factory=list)
 
-    include_unassigned: bool = False
+    # include_unassigned: bool = False
 
     match_all: bool = False
 
     date_from: Optional[datetime] = None
     date_to: Optional[datetime] = None
-    location_query: Optional[str] = None
+
+    country: Optional[List[str]] = None
+    city: Optional[List[str]] = None

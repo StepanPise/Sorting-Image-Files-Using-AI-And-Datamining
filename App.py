@@ -104,7 +104,7 @@ class PhotoApp(ctk.CTk):
 
         # People Sidebar
         self.sidebar_people = PeopleSidebar(
-            self, self.controller, callback=self.add_filter_criteria
+            self, self.controller, callback=self.add_people_filter_criteria
         )
         self.sidebar_people.grid(
             row=3, column=0, padx=(10, 5), pady=10, sticky="nsew"
@@ -112,7 +112,8 @@ class PhotoApp(ctk.CTk):
         self.sidebar_people.grid_columnconfigure(0, weight=1)
 
         # Metadata Sidebar
-        self.sidebar_metadata = MetadataSidebar(self, self.controller)
+        self.sidebar_metadata = MetadataSidebar(
+            self, self.controller, callback=self.add_location_filter_criteria)
 
         self.sidebar_metadata.grid(
             row=4, column=0, padx=(10, 5), pady=10, sticky="nsew"
@@ -227,8 +228,16 @@ class PhotoApp(ctk.CTk):
             "fullscreen")
         self.is_fullscreen = is_full
 
-    def add_filter_criteria(self, ids):
+    def add_people_filter_criteria(self, ids):
         self.criteria.person_ids = list(ids)
+        self.update_gallery()
+
+    def add_location_filter_criteria(self, countries, cities):
+        self.criteria.country = countries
+        self.criteria.city = cities
+        self.update_gallery()
+
+    def update_gallery(self):
         photos = self.controller.get_photos_from_repo_for_gallery(
             self.criteria)
         self.gallery.update(photos)

@@ -42,6 +42,7 @@ class PhotoGallery(ctk.CTkFrame):
         self.btn_next.pack(side="right", padx=10)
 
     def update(self, photos):
+        print(f"Updating gallery with {len(photos)} photos")
         self.batches = []
         temp_list = []
 

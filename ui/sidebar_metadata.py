@@ -4,9 +4,10 @@ from tkcalendar import Calendar
 
 class MetadataSidebar(ctk.CTkFrame):
 
-    def __init__(self, master, controller, **kwargs):
+    def __init__(self, master, controller, callback, **kwargs):
         super().__init__(master, **kwargs)
         self.controller = controller
+        self.callback = callback
 
         self.locations_data = {}
         # dicts for checkboxes
@@ -134,3 +135,5 @@ class MetadataSidebar(ctk.CTkFrame):
         for name, check in self.city_checkboxes.items():
             if check.get() == 1:
                 selected_cities.append(name)
+
+        self.callback(selected_countries, selected_cities)
