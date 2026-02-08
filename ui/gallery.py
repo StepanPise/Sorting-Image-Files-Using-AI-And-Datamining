@@ -2,6 +2,8 @@ import customtkinter as ctk
 from PIL import Image, ImageOps
 import os
 
+# ADD REFRESH GALLERY FUNCTION!!!
+
 
 class PhotoGallery(ctk.CTkFrame):
     def __init__(self, master, controller, **kwargs):

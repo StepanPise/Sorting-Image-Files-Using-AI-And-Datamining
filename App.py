@@ -18,6 +18,8 @@ class PhotoApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
+        # ADD REFRESH GALLERY FUNCTION!!!
+
         self.is_fullscreen = False
         self.controller = PhotoController()
         self.sys_prefs_repo = SystemPrefsRepository(self.controller.db)
@@ -52,7 +54,7 @@ class PhotoApp(ctk.CTk):
         self.grid_rowconfigure(0, weight=0)  # top_frame
         self.grid_rowconfigure(1, weight=0)  # lbl_folder
         self.grid_rowconfigure(2, weight=0)  # status_frame
-        self.grid_rowconfigure(3, weight=1)  # SCROLL FRAMES
+        self.grid_rowconfigure(3, weight=0)  # SCROLL FRAMES
         self.grid_rowconfigure(4, weight=1)
 
         # Top frame
