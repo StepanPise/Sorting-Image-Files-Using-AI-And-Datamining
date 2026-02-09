@@ -1,7 +1,11 @@
+import datetime
+import os
 from PIL import Image
 import exifread
 from geopy.geocoders import Nominatim
 from typing import Optional, Tuple
+
+import re
 
 geolocator = Nominatim(user_agent="photo_sorter")
 
@@ -10,11 +14,34 @@ class PhotoMetadata:
 
     @staticmethod
     def get_date(img_path: str) -> Optional[str]:
-        with open(img_path, 'rb') as f:
-            tags = exifread.process_file(
-                f, stop_tag="EXIF DateTimeOriginal", details=False)
-        date_tag = tags.get("EXIF DateTimeOriginal")
-        return str(date_tag) if date_tag else None
+        # EXIF
+        try:
+            with open(img_path, 'rb') as f:
+                tags = exifread.process_file(
+                    f, stop_tag="EXIF DateTimeOriginal", details=False)
+                date_tag = tags.get("EXIF DateTimeOriginal")
+
+                if date_tag:
+                    return str(date_tag).replace(":", "-", 2)
+        except Exception:
+            pass
+
+        # 2. REGEX
+        filename = os.path.basename(img_path)
+        date_pattern = re.search(
+            r'((?:19|20)\d{2})[-_]?((?:0[1-9]|1[0-2]))[-_]?((?:0[1-9]|[12]\d|3[01]))', filename)
+
+        if date_pattern:
+            year, month, day = date_pattern.groups()
+            return f"{year}-{month}-{day} 00:00:00"
+
+        # 3. SYSTEM TIMESTAMP
+        try:
+            timestamp = os.path.getmtime(img_path)
+            dt = datetime.fromtimestamp(timestamp)
+            return dt.strftime("%Y-%m-%d %H:%M:%S")
+        except Exception:
+            return None
 
     @staticmethod
     def get_location(img_path: str) -> Optional[str]:

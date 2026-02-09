@@ -11,9 +11,6 @@ class FilterCriteria:
     """
 
     person_ids: List[int] = field(default_factory=list)
-
-    # include_unassigned: bool = False
-
     match_all: bool = False
 
     date_from: Optional[datetime] = None
@@ -21,3 +18,16 @@ class FilterCriteria:
 
     country: Optional[List[str]] = None
     city: Optional[List[str]] = None
+
+    def __setattr__(self, name, value):
+        super().__setattr__(name, value)
+        if name != "__dict__":
+            self._log_state()
+
+    def _log_state(self):
+        print(
+            f"[FilterCriteria changed] "
+            f"person_ids={self.person_ids}, "
+            f"country={self.country}, "
+            f"city={self.city}"
+        )

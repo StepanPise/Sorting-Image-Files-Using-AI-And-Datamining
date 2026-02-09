@@ -1,5 +1,4 @@
 import customtkinter as ctk
-from tkcalendar import Calendar
 
 
 class LocationSidebar(ctk.CTkFrame):

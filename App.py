@@ -9,6 +9,7 @@ from structures import FilterCriteria
 from ui.gallery import PhotoGallery
 from ui.people_sidebar import PeopleSidebar
 from ui.location_sidebar import LocationSidebar
+from ui.time_sidebar import TimeSidebar
 
 ctk.set_appearance_mode("system")
 ctk.set_default_color_theme("blue")
@@ -69,6 +70,12 @@ class PhotoApp(ctk.CTk):
         self.sidebar_metadata = LocationSidebar(
             master=self.tabs.tab("Location"), controller=self.controller, callback=self.add_location_filter_criteria)
         self.sidebar_metadata.grid(
+            row=0, column=0, padx=(10, 5), pady=10, sticky="nsew")
+
+        # Time Sidebar
+        self.sidebar_time = TimeSidebar(
+            master=self.tabs.tab("Time"), controller=self.controller, callback=self.add_time_filter_criteria)
+        self.sidebar_time.grid(
             row=0, column=0, padx=(10, 5), pady=10, sticky="nsew")
 
         # Photo gallery
@@ -180,6 +187,11 @@ class PhotoApp(ctk.CTk):
 
     def add_people_filter_criteria(self, ids):
         self.criteria.person_ids = list(ids)
+        self.update_gallery()
+
+    def add_time_filter_criteria(self, date_from, date_to):
+        self.criteria.date_from = date_from
+        self.criteria.date_to = date_to
         self.update_gallery()
 
     def add_location_filter_criteria(self, countries, cities):

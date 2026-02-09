@@ -6,4 +6,5 @@ photo_ai.db
 db_test.py
 test.py
 test_location
+test_time
 #test_location_2
