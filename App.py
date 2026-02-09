@@ -18,8 +18,6 @@ class PhotoApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        # ADD REFRESH GALLERY FUNCTION!!!
-
         self.is_fullscreen = False
         self.controller = PhotoController()
         self.sys_prefs_repo = SystemPrefsRepository(self.controller.db)
@@ -45,6 +43,7 @@ class PhotoApp(ctk.CTk):
         self.create_widgets()
         self.sidebar_people.refresh_people_list()
         self.sidebar_metadata.prepare_locations()
+        self.update_gallery()
 
     def create_widgets(self):
 
@@ -169,6 +168,7 @@ class PhotoApp(ctk.CTk):
         self.btn_select_folder.configure(state="enabled")
         self.switch_detect.configure(state="enabled")
         # self.status_frame.pack_forget()
+        self.update_gallery()
 
     def on_closing(self):
 
