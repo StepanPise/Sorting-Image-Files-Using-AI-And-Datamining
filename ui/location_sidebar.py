@@ -2,7 +2,7 @@ import customtkinter as ctk
 from tkcalendar import Calendar
 
 
-class MetadataSidebar(ctk.CTkFrame):
+class LocationSidebar(ctk.CTkFrame):
 
     def __init__(self, master, controller, callback, **kwargs):
         super().__init__(master, **kwargs)
