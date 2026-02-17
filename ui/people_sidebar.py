@@ -101,3 +101,9 @@ class PeopleSidebar(ctk.CTkFrame):
 
         self.callback(self.selected_ids)
         # print(f"IDS: {self.selected_ids}")
+
+    def reset_filter(self):
+        self.selected_ids.clear()
+        for row in self.person_rows.values():
+            row.configure(fg_color=("gray85", "gray25"))
+        self.callback(self.selected_ids)

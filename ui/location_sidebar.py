@@ -136,3 +136,10 @@ class LocationSidebar(ctk.CTkFrame):
                 selected_cities.append(name)
 
         self.callback(selected_countries, selected_cities)
+
+    def reset_filter(self):
+        for check in self.country_checkboxes.values():
+            check.deselect()
+        for check in self.city_checkboxes.values():
+            check.deselect()
+        self.trigger_filter()

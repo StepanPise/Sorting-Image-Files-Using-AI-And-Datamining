@@ -23,7 +23,7 @@ class PhotoApp(ctk.CTk):
         self.controller = PhotoController()
         self.sys_prefs_repo = SystemPrefsRepository(self.controller.db)
         self.sidebar_people = None
-        self.sidebar_metadata = None
+        self.sidebar_location = None
         self.gallery = None
         self.criteria = FilterCriteria()
 
@@ -43,7 +43,7 @@ class PhotoApp(ctk.CTk):
 
         self.create_widgets()
         self.sidebar_people.refresh_people_list()
-        self.sidebar_metadata.prepare_locations()
+        self.sidebar_location.prepare_locations()
         self.update_gallery()
 
     def create_widgets(self):
@@ -57,7 +57,8 @@ class PhotoApp(ctk.CTk):
         self.tabs.add("Location")
         self.tabs.add("Time")
         self.tabs.add("Others")
-        self.tabs.grid(row=3, column=0, padx=(10, 5), pady=10, sticky="nsew")
+        self.tabs.grid(row=3, column=0, padx=(
+            10, 5), pady=(10, 0), sticky="nsew")
 
         # People Sidebar
         self.sidebar_people = PeopleSidebar(
@@ -67,9 +68,9 @@ class PhotoApp(ctk.CTk):
         )
 
         # Metadata Sidebar
-        self.sidebar_metadata = LocationSidebar(
+        self.sidebar_location = LocationSidebar(
             master=self.tabs.tab("Location"), controller=self.controller, callback=self.add_location_filter_criteria)
-        self.sidebar_metadata.grid(
+        self.sidebar_location.grid(
             row=0, column=0, padx=(10, 5), pady=10, sticky="nsew")
 
         # Time Sidebar
@@ -80,8 +81,12 @@ class PhotoApp(ctk.CTk):
 
         # Photo gallery
         self.gallery = PhotoGallery(self, controller=self.controller,)
-        self.gallery.grid(row=3, column=1, padx=(
+        self.gallery.grid(row=3, column=1, rowspan=2, padx=(
             5, 10), pady=10, sticky="nsew")
+
+        self.btn_export = ctk.CTkButton(
+            self.tabs, text="Reset All Filters", command=self.reset_all_filters)
+        self.btn_export.grid(row=4, column=0, pady=(0, 10), sticky="nsew")
 
         # Weights
         self._configure_grid_element_weights()
@@ -120,7 +125,7 @@ class PhotoApp(ctk.CTk):
     def on_analysis_complete(self):
         print("Done.")
         self.sidebar_people.refresh_people_list()
-        self.sidebar_metadata.prepare_locations()
+        self.sidebar_location.prepare_locations()
 
         self.btn_select_folder.configure(state="enabled")
         self.switch_detect.configure(state="enabled")
@@ -197,6 +202,14 @@ class PhotoApp(ctk.CTk):
     def add_location_filter_criteria(self, countries, cities):
         self.criteria.country = countries
         self.criteria.city = cities
+        self.update_gallery()
+
+    def reset_all_filters(self):
+        self.criteria = FilterCriteria()
+
+        self.sidebar_time.reset_filter()
+        self.sidebar_location.reset_filter()
+        self.sidebar_people.reset_filter()
         self.update_gallery()
 
     def update_gallery(self):
