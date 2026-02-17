@@ -26,6 +26,8 @@ class PhotoApp(ctk.CTk):
         self.sidebar_location = None
         self.gallery = None
         self.criteria = FilterCriteria()
+        self.criteria.subset_ids = []
+        # self.criteria.subset_ids = None
 
         self.window_width = 500
         self.window_height = 600
@@ -44,6 +46,7 @@ class PhotoApp(ctk.CTk):
         self.create_widgets()
         self.sidebar_people.refresh_people_list()
         self.sidebar_location.prepare_locations()
+
         self.update_gallery()
 
     def create_widgets(self):
@@ -126,7 +129,7 @@ class PhotoApp(ctk.CTk):
         print("Done.")
         self.sidebar_people.refresh_people_list()
         self.sidebar_location.prepare_locations()
-
+        self.criteria.subset_ids = list(self.controller.current_batch_ids)
         self.btn_select_folder.configure(state="enabled")
         self.switch_detect.configure(state="enabled")
         # self.status_frame.pack_forget()
@@ -205,7 +208,7 @@ class PhotoApp(ctk.CTk):
         self.update_gallery()
 
     def reset_all_filters(self):
-        self.criteria = FilterCriteria()
+        self.criteria.reset()
 
         self.sidebar_time.reset_filter()
         self.sidebar_location.reset_filter()

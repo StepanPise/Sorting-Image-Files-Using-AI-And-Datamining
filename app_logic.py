@@ -1,4 +1,5 @@
 from pathlib import Path
+from tokenize import String
 from PIL import Image, ImageOps
 import json
 
@@ -20,8 +21,12 @@ class PhotoController:
 
         self.face_detector = FaceDetection(self.photo_repo, self.face_repo)
         self.face_clustering = FaceClustering(self.face_repo, self.person_repo)
+        self.current_batch_ids = set()
 
     def analyze_folder(self, folder_path, detect_faces=True, callback=None):
+
+        self.current_batch_ids.clear()
+
         input_folder = Path(folder_path)
 
         image_paths = [
@@ -39,7 +44,11 @@ class PhotoController:
 
         for i, img_path in enumerate(image_paths):
             # 1. Get metadata
-            self._scan_metadata(img_path)
+            photo_id = self._scan_metadata(img_path)
+
+            # add current batch photo ids
+            if photo_id:
+                self.current_batch_ids.add(photo_id)
 
             # 2. Face detection
             if detect_faces:
@@ -71,11 +80,13 @@ class PhotoController:
         if exists:
             self.photo_repo.update_photo(
                 photo_id=exists["id"], path=path_str, filename=filename, location_data_city=location_data_city, location_data_country=location_data_country)
+            return exists["id"]
         else:
-            self.photo_repo.insert_photo(
+            new_id = self.photo_repo.insert_photo(
                 path=path_str, filename=filename, hash=hash_val,
                 location_data_city=location_data_city, time_data=time_data,
                 width=width, height=height, location_data_country=location_data_country)
+            return new_id
 
     def get_person_thumbnail(self, person_id):
         rows = self.face_repo.get_faces_by_person_id(person_id)
@@ -135,6 +146,10 @@ class PhotoController:
 
     def close(self):
         self.db.close()
+
+    def export_photos(self):
+        pass
+
 
 # =========================================================================
 #  WRAPPER METODS FOR UI (app.py)

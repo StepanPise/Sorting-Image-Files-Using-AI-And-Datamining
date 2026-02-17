@@ -13,6 +13,8 @@ class FilterCriteria:
     person_ids: List[int] = field(default_factory=list)
     match_all: bool = False
 
+    subset_ids: Optional[List[int]] = None
+
     date_from: Optional[datetime] = None
     date_to: Optional[datetime] = None
 
@@ -23,6 +25,14 @@ class FilterCriteria:
         super().__setattr__(name, value)
         if name != "__dict__":
             self._log_state()
+
+    def reset(self):
+        self.person_ids = []
+        self.match_all = False
+        self.date_from = None
+        self.date_to = None
+        self.country = None
+        self.city = None
 
     def _log_state(self):
         print(

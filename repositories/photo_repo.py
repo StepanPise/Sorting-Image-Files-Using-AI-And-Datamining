@@ -16,13 +16,22 @@ class PhotoRepository(BaseRepository):
     def insert_photo(self, **kwargs):
         self.cursor.execute(
             """
-            INSERT INTO photos (path, filename, hash, location_data_city, time_data, width, height, location_data_country)
-            VALUES (%s, %s, %s, %s, %s, %s, %s,%s)
-            """,
+                INSERT INTO photos (path, filename, hash, location_data_city, time_data, width, height, location_data_country)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
+                """,
             (kwargs["path"], kwargs["filename"], kwargs["hash"], kwargs["location_data_city"],
              kwargs["time_data"], kwargs["width"], kwargs["height"], kwargs["location_data_country"])
         )
+
+        result = self.cursor.fetchone()
+        if isinstance(result, dict):
+            new_id = result['id']
+        else:
+            new_id = result[0]
+
         self.conn.commit()
+        return new_id
 
     def update_photo(self, photo_id, **kwargs):
 
@@ -79,6 +88,13 @@ class PhotoRepository(BaseRepository):
         if criteria.date_to:
             conditions.append("p.time_data <= %s")
             params.append(criteria.date_to)
+
+        if criteria.subset_ids is not None:
+            if len(criteria.subset_ids) == 0:
+                conditions.append("1=0")
+            else:
+                conditions.append("p.id = ANY(%s)")
+                params.append(list(criteria.subset_ids))
 
         if joins:
             query += " " + " ".join(joins)
