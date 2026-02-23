@@ -1,6 +1,7 @@
 import customtkinter as ctk
 from tkinter import filedialog
 import threading
+from tkinter import messagebox
 
 from app_logic import PhotoController
 from repositories.sys_prefs_repo import SystemPrefsRepository
@@ -32,6 +33,7 @@ class PhotoApp(ctk.CTk):
         self.window_width = 500
         self.window_height = 600
         self.detect_faces_enabled = ctk.BooleanVar(value=True)
+        self.subsets_enabled = ctk.BooleanVar(value=False)
         self.load_user_preferences()
 
         self.geometry(f"{self.window_width}x{self.window_height}")
@@ -47,7 +49,7 @@ class PhotoApp(ctk.CTk):
         self.sidebar_people.refresh_people_list()
         self.sidebar_location.prepare_locations()
 
-        self.update_gallery()
+        self.toggle_subsets()
 
     def create_widgets(self):
 
@@ -87,9 +89,10 @@ class PhotoApp(ctk.CTk):
         self.gallery.grid(row=3, column=1, rowspan=2, padx=(
             5, 10), pady=10, sticky="nsew")
 
-        self.btn_export = ctk.CTkButton(
+        self.btn_reset_filters = ctk.CTkButton(
             self.tabs, text="Reset All Filters", command=self.reset_all_filters)
-        self.btn_export.grid(row=4, column=0, pady=(0, 10), sticky="nsew")
+        self.btn_reset_filters.grid(
+            row=4, column=0, pady=(0, 10), sticky="nsew")
 
         # Weights
         self._configure_grid_element_weights()
@@ -108,6 +111,7 @@ class PhotoApp(ctk.CTk):
 
             self.btn_select_folder.configure(state="disabled")
             self.switch_detect.configure(state="disabled")
+            self.switch_subsets.configure(state="disabled")
 
             threading.Thread(
                 target=self.run_folder_analysis_with_seperate_thread,
@@ -132,7 +136,9 @@ class PhotoApp(ctk.CTk):
         self.criteria.subset_ids = list(self.controller.current_batch_ids)
         self.btn_select_folder.configure(state="enabled")
         self.switch_detect.configure(state="enabled")
+        self.switch_subsets.configure(state="enabled")
         # self.status_frame.pack_forget()
+        self.toggle_subsets()
         self.update_gallery()
 
     def on_closing(self):
@@ -216,9 +222,9 @@ class PhotoApp(ctk.CTk):
         self.update_gallery()
 
     def update_gallery(self):
-        photos = self.controller.get_photos_from_repo_for_gallery(
+        self.photos = self.controller.get_photos_from_repo_for_gallery(
             self.criteria)
-        self.gallery.update(photos)
+        self.gallery.update(self.photos)
 
     def _create_upper_widgets(self):
 
@@ -239,8 +245,14 @@ class PhotoApp(ctk.CTk):
             top_frame, text="Detect Faces", variable=self.detect_faces_enabled)
         self.switch_detect.grid(row=0, column=1, padx=10, pady=5, sticky="w")
 
+        # Top frame item 3 = SUBSETS
+        self.switch_subsets = ctk.CTkSwitch(
+            top_frame, text="Use Subsets", variable=self.subsets_enabled, command=self.toggle_subsets)
+        self.switch_subsets.grid(row=0, column=2, padx=10, pady=5, sticky="w")
+
         # Export button (not implemented)
-        self.btn_export = ctk.CTkButton(top_frame, text="Export Photos (TODO)")
+        self.btn_export = ctk.CTkButton(
+            top_frame, text="Export Photos", command=self.export_current_selection)
         self.btn_export.grid(row=0, column=3, padx=10, pady=5, sticky="e")
 
         # Selected folder string
@@ -285,6 +297,55 @@ class PhotoApp(ctk.CTk):
         self.tabs.tab("Others").grid_rowconfigure(0, weight=1)
 
         self.gallery.grid_columnconfigure(0, weight=1)
+
+    def toggle_subsets(self):
+        if self.subsets_enabled.get():
+            current_ids = self.controller.current_batch_ids
+            if current_ids:
+                self.criteria.subset_ids = list(current_ids)
+            else:
+                self.criteria.subset_ids = []
+        else:
+            self.criteria.subset_ids = None
+        self.update_gallery()
+
+    def export_current_selection(self):
+        target_dir = filedialog.askdirectory(
+            title="Choose place to export")
+        if not target_dir:
+            return
+
+        photos_to_export = self.controller.get_photos_from_repo_for_gallery(
+            self.criteria)
+
+        if not photos_to_export:
+            messagebox.showinfo("Export", "No photos.")
+            return
+
+        self.btn_export.configure(
+            state="disabled", text="Exporting...")
+
+        threading.Thread(
+            target=self._run_export_thread,
+            args=(photos_to_export, target_dir),
+            daemon=True
+        ).start()
+
+    def _run_export_thread(self, photos, target_dir):
+        count, errors = self.controller.export_photos(photos, target_dir)
+
+        self.after(0, lambda: self._on_export_finished(
+            count, errors, target_dir))
+
+    def _on_export_finished(self, count, errors, target_dir):
+        self.btn_export.configure(state="normal", text="Export Photos")
+
+        msg = f"Successfully exported: {count} photos\nDestination: {target_dir}"
+        if errors > 0:
+            msg += f"\n\nCopying errors: {errors}"
+            messagebox.showwarning("Export completed with errors", msg)
+        else:
+            messagebox.showinfo("Export completed", msg)
 
 
 if __name__ == "__main__":

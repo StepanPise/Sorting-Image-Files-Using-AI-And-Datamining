@@ -3,6 +3,10 @@ from tokenize import String
 from PIL import Image, ImageOps
 import json
 
+import shutil
+import os
+from datetime import datetime
+
 from db_setup import Database
 from metadata_handle import PhotoMetadata
 from face_clustering import FaceClustering
@@ -147,9 +151,38 @@ class PhotoController:
     def close(self):
         self.db.close()
 
-    def export_photos(self):
-        pass
+    def export_photos(self, photos_list, base_target_folder):
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        export_folder_name = f"Export_{timestamp}"
 
+        final_target_folder = os.path.join(
+            base_target_folder, export_folder_name)
+
+        if not os.path.exists(final_target_folder):
+            os.makedirs(final_target_folder)
+
+        count = 0
+        errors = 0
+
+        for photo in photos_list:
+            src = photo['path']
+            filename = photo['filename']
+            dst = os.path.join(final_target_folder, filename)
+
+            # Prevent dupliacation
+            if os.path.exists(dst):
+                base, ext = os.path.splitext(filename)
+                dst = os.path.join(final_target_folder,
+                                   f"{base}_{photo['id']}{ext}")
+
+            try:
+                shutil.copy2(src, dst)
+                count += 1
+            except Exception as e:
+                print(f"Error copying {src}: {e}")
+                errors += 1
+
+        return count, errors
 
 # =========================================================================
 #  WRAPPER METODS FOR UI (app.py)
