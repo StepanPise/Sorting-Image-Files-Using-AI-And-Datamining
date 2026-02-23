@@ -42,7 +42,7 @@ class PeopleSidebar(ctk.CTkFrame):
             img_ctk = ctk.CTkImage(light_image=pil_img,
                                    dark_image=pil_img, size=(60, 60))
         else:
-            img_ctk = None
+            return
 
         if person_id in self.selected_ids:
             bg_color = ("gray75", "gray35")  # selected

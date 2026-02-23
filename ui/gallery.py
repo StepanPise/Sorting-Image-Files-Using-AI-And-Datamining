@@ -85,17 +85,32 @@ class PhotoGallery(ctk.CTkFrame):
 
         self.btn_prev.configure(
             state="normal" if self.current_batch_index > 0 else "disabled")
-        self.btn_next.configure(state="normal" if self.current_batch_index < len(
-            self.batches) - 1 else "disabled")
+        self.btn_next.configure(
+            state="normal" if self.current_batch_index < len(self.batches) - 1 else "disabled")
 
         COLUMNS = 5
         CARD_WIDTH = 150
         CARD_HEIGHT = 150
         IMG_SIZE = 140
 
-        for i, photo_data in enumerate(current_photos):
-            row = i // COLUMNS
-            col = i % COLUMNS
+        valid_index = 0
+
+        for photo_data in current_photos:
+
+            path = photo_data.get('path')
+            p_id = photo_data.get('id')
+
+            try:
+                pil_img = Image.open(path)
+                pil_img = ImageOps.exif_transpose(pil_img)
+                pil_img.thumbnail((IMG_SIZE, IMG_SIZE))
+            except Exception:
+                continue
+
+            row = valid_index // COLUMNS
+            col = valid_index % COLUMNS
+            valid_index += 1
+
             self.scroll_frame_photos.grid_columnconfigure(col, weight=1)
 
             card = ctk.CTkFrame(
@@ -107,32 +122,21 @@ class PhotoGallery(ctk.CTkFrame):
             card.grid(row=row, column=col, padx=10, pady=10)
             card.grid_propagate(False)
 
-            path = photo_data.get('path')
-            p_id = photo_data.get('id')
+            my_image = ctk.CTkImage(
+                light_image=pil_img,
+                dark_image=pil_img,
+                size=(IMG_SIZE, IMG_SIZE)
+            )
 
-            try:
-                pil_img = Image.open(path)
-                pil_img = ImageOps.exif_transpose(pil_img)
-                pil_img.thumbnail((IMG_SIZE, IMG_SIZE))
-
-                my_image = ctk.CTkImage(
-                    light_image=pil_img,
-                    dark_image=pil_img,
-                    size=(IMG_SIZE, IMG_SIZE)
-                )
-
-                btn = ctk.CTkButton(
-                    card,
-                    text="",
-                    image=my_image,
-                    fg_color="transparent",
-                    hover_color="gray40",
-                    width=IMG_SIZE,
-                    height=IMG_SIZE,
-                    command=lambda x=p_id: print(f"id:{x}")
-                )
-            except Exception as e:
-                btn = ctk.CTkButton(card, text="ERROR",
-                                    width=IMG_SIZE, height=IMG_SIZE)
+            btn = ctk.CTkButton(
+                card,
+                text="",
+                image=my_image,
+                fg_color="transparent",
+                hover_color="gray40",
+                width=IMG_SIZE,
+                height=IMG_SIZE,
+                command=lambda x=p_id: print(f"id:{x}")
+            )
 
             btn.place(relx=0.5, rely=0.5, anchor="center")
