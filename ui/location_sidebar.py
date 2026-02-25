@@ -53,9 +53,9 @@ class LocationSidebar(ctk.CTkFrame):
 
     # load_location_tree() return example: { "Česko": ["Praha", "Brno"], "Německo": ["Berlín"] }
 
-    def prepare_locations(self):
+    def prepare_locations(self, subset_ids=None):
         '''RUN ONCE on init = loads data and prepares country checkboxes'''
-        self.locations_data = self.controller.load_location_tree()
+        self.locations_data = self.controller.load_location_tree(subset_ids)
         sorted_countries = sorted(list(self.locations_data.keys()))
 
         for widget in self.scroll_countries.winfo_children():

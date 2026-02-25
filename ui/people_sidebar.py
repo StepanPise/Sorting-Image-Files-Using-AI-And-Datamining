@@ -20,11 +20,11 @@ class PeopleSidebar(ctk.CTkFrame):
 
         self.scroll_frame_people.grid_columnconfigure(0, weight=1)
 
-    def refresh_people_list(self):
+    def refresh_people_list(self, subset_ids=None):
         for widget in self.scroll_frame_people.winfo_children():
             widget.destroy()
 
-        people_data = self.controller.get_all_people()
+        people_data = self.controller.get_all_people(subset_ids)
 
         for i, row in enumerate(people_data):
             self.create_person_row(row['id'], row['name'], row_index=i)

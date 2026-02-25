@@ -7,23 +7,27 @@ class PersonRepository(BaseRepository):
         self.cursor.execute("SELECT * FROM people")
         return self.cursor.fetchall()
 
-    def get_all_with_faces(self):
-        self.cursor.execute("""
+    def get_all_with_faces(self, subset_ids=None):
+        query = """
             SELECT p.id, p.name
             FROM people p
             JOIN faces f ON f.person_id = p.id
             JOIN photos ph ON ph.id = f.photo_id
-            GROUP BY p.id, p.name
-            ORDER BY p.name;
-        """)
-        return self.cursor.fetchall()
+            WHERE 1=1
+        """
 
-    def update_name(self, person_id, new_name):
-        self.cursor.execute(
-            "UPDATE people SET name = %s WHERE id = %s",
-            (new_name, person_id)
-        )
-        self.conn.commit()
+        params = []
+        if subset_ids is not None:
+            if len(subset_ids) == 0:
+                query += " AND 1=0"
+            else:
+                query += " AND f.photo_id = ANY(%s)"
+                params.append(list(subset_ids))
+
+        query += " GROUP BY p.id, p.name ORDER BY p.name ASC"
+
+        self.cursor.execute(query, tuple(params))
+        return self.cursor.fetchall()
 
     # Create person and return id
     def create_person(self, name, avg_embedding_bytes):

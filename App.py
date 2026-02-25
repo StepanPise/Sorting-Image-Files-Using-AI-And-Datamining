@@ -299,14 +299,20 @@ class PhotoApp(ctk.CTk):
         self.gallery.grid_columnconfigure(0, weight=1)
 
     def toggle_subsets(self):
+        target_ids = None
+
         if self.subsets_enabled.get():
             current_ids = self.controller.current_batch_ids
             if current_ids:
-                self.criteria.subset_ids = list(current_ids)
+                target_ids = list(current_ids)
             else:
-                self.criteria.subset_ids = []
-        else:
-            self.criteria.subset_ids = None
+                target_ids = []
+
+        self.criteria.subset_ids = target_ids
+
+        self.sidebar_people.refresh_people_list(subset_ids=target_ids)
+        self.sidebar_location.prepare_locations(subset_ids=target_ids)
+
         self.update_gallery()
 
     def export_current_selection(self):

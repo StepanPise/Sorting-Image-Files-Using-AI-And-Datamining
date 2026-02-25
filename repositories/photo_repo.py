@@ -91,7 +91,7 @@ class PhotoRepository(BaseRepository):
 
         if criteria.subset_ids is not None:
             if len(criteria.subset_ids) == 0:
-                conditions.append("1=0")
+                conditions.append("1=0")  # returns no reuslts
             else:
                 conditions.append("p.id = ANY(%s)")
                 params.append(list(criteria.subset_ids))
@@ -108,18 +108,24 @@ class PhotoRepository(BaseRepository):
 
         return self.cursor.fetchall()
 
-    def get_unique_locations(self):
+    def get_unique_locations(self, subset_ids=None):
         """
         RETURN example: { "Česko": ["Praha", "Brno"], "Německo": ["Berlín"] }
         """
 
-        self.cursor.execute("""
-                SELECT DISTINCT location_data_country, location_data_city 
-                FROM photos 
-                WHERE (location_data_country IS NOT NULL)
-                ORDER BY location_data_country ASC, location_data_city ASC
-            """)
+        query = "SELECT DISTINCT location_data_country, location_data_city FROM photos WHERE location_data_country IS NOT NULL"
+        params = []
 
+        if subset_ids is not None:
+            if len(subset_ids) == 0:
+                query += " AND 1=0"
+            else:
+                query += " AND id = ANY(%s)"
+                params.append(list(subset_ids))
+
+        query += " ORDER BY location_data_country ASC, location_data_city ASC"
+
+        self.cursor.execute(query, tuple(params))
         rows = self.cursor.fetchall()
 
         tree = {}

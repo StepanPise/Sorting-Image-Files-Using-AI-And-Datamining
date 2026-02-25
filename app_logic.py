@@ -76,7 +76,11 @@ class PhotoController:
         time_data = PhotoMetadata.get_date(path)
         width, height = PhotoMetadata.get_size(path)
         location_data = PhotoMetadata.get_location(path)
-        location_data_city, location_data_country = location_data
+
+        if location_data:
+            location_data_city, location_data_country = location_data
+        else:
+            location_data_city, location_data_country = None, None
 
         # Check if photo with this hash exists to prevent duplication
         exists = self.photo_repo.get_by_hash(hash_val)
@@ -188,8 +192,8 @@ class PhotoController:
 #  WRAPPER METODS FOR UI (app.py)
 # =========================================================================
 
-    def get_all_people(self):
-        return self.person_repo.get_all_with_faces()
+    def get_all_people(self, subset_ids=None):
+        return self.person_repo.get_all_with_faces(subset_ids)
 
     def update_person_name(self, person_id, new_name):
         self.person_repo.update_name(person_id, new_name)
@@ -198,5 +202,5 @@ class PhotoController:
         photos = self.photo_repo.get_photos(filtercrits)
         return photos
 
-    def load_location_tree(self):
-        return self.photo_repo.get_unique_locations()
+    def load_location_tree(self, subset_ids=None):
+        return self.photo_repo.get_unique_locations(subset_ids)
