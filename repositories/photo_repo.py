@@ -13,6 +13,11 @@ class PhotoRepository(BaseRepository):
             "SELECT * FROM photos WHERE hash = %s", (hash_val,))
         return self.cursor.fetchone()
 
+    def get_by_id(self, id):
+        self.cursor.execute(
+            "SELECT * FROM photos WHERE id = %s", (id,))
+        return self.cursor.fetchone()
+
     def insert_photo(self, **kwargs):
         self.cursor.execute(
             """

@@ -2,6 +2,7 @@ from pathlib import Path
 from tokenize import String
 from PIL import Image, ImageOps
 import json
+import hashlib
 
 import shutil
 import os
@@ -34,9 +35,8 @@ class PhotoController:
         input_folder = Path(folder_path)
 
         image_paths = [
-            p for p in input_folder.iterdir()
-            # ".webp"??
-            if p.is_file() and p.suffix.lower() in [".jpg", ".jpeg", ".png"]
+            p for p in input_folder.rglob("*")
+            if p.is_file() and p.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp"]
         ]
 
         total_photos = len(image_paths)
@@ -56,7 +56,7 @@ class PhotoController:
 
             # 2. Face detection
             if detect_faces:
-                self.face_detector.process_faces(img_path)
+                self.face_detector.process_photo(img_path, photo_id)
 
             if callback:
                 callback(i/total_photos, i/total_photos)
@@ -187,6 +187,15 @@ class PhotoController:
                 errors += 1
 
         return count, errors
+
+    def compute_hash(self, path: Path) -> str:
+
+        BUF_SIZE = 65536  # 64KB
+        sha256 = hashlib.sha256()
+        with open(path, "rb") as f:
+            while chunk := f.read(BUF_SIZE):
+                sha256.update(chunk)
+        return sha256.hexdigest()
 
 # =========================================================================
 #  WRAPPER METODS FOR UI (app.py)
