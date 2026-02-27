@@ -2,7 +2,7 @@ from pathlib import Path
 import json
 import cv2
 import torch
-from retinaface import RetinaFace
+from insightface.app import FaceAnalysis
 from facenet_pytorch import InceptionResnetV1
 import torchvision.transforms as transforms
 import numpy as np
@@ -26,7 +26,7 @@ class FaceDetection:
             rgb_image, faces = self._analyze_image(img_path)
 
             if faces:
-                print(f"{img_path.name}: Faces found: {list(faces.keys())}")
+                print(f"{img_path.name}: Faces found: {faces}")
                 self._extract_and_save_faces(photo_id, rgb_image, faces)
             else:
                 print(f"{img_path.name}: No faces found")
@@ -36,12 +36,12 @@ class FaceDetection:
         except Exception as e:
             print(f"Error -> Image couldn't be analyzed: {img_path.name}: {e}")
 
-    def _extract_and_save_faces(self, photo_id: int, rgb_image: np.ndarray, faces: dict) -> None:
+    def _extract_and_save_faces(self, photo_id: int, rgb_image: np.ndarray, faces: list) -> None:
 
         img_h, img_w, _ = rgb_image.shape
 
-        for key, face in faces.items():
-            x1, y1, x2, y2 = face["facial_area"]
+        for face in faces:
+            x1, y1, x2, y2 = face.bbox.astype(int)
 
             x1, y1 = max(0, int(x1)), max(0, int(y1))
             x2, y2 = min(img_w, int(x2)), min(img_h, int(y2))
@@ -63,7 +63,9 @@ class FaceDetection:
             raise ValueError("Image could not be read")
 
         rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        faces = RetinaFace.detect_faces(str(img_path))
+
+        faces = self.face_app.get(image)
+
         print(f"{img_path.name}: Detected faces = {faces}")
 
         return rgb_image, faces
@@ -78,7 +80,10 @@ class FaceDetection:
         # Load pre-trained Face Recognition model
         self.resnet = InceptionResnetV1(pretrained='vggface2').eval()
 
-        # Image Preprocessing transformations for RetinaFace
+        self.face_app = FaceAnalysis(
+            name='buffalo_s', allowed_modules=['detection'])
+        self.face_app.prepare(ctx_id=-1, det_size=(640, 640))
+
         self.transform = transforms.Compose([
             transforms.ToPILImage(),
             transforms.Resize((160, 160)),

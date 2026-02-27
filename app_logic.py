@@ -72,7 +72,7 @@ class PhotoController:
     def _scan_metadata(self, path):
         filename = path.name
         path_str = str(path)
-        hash_val = self.face_detector.compute_hash(path)
+        hash_val = self.compute_hash(path)
         time_data = PhotoMetadata.get_date(path)
         width, height = PhotoMetadata.get_size(path)
         location_data = PhotoMetadata.get_location(path)
