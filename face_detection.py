@@ -1,11 +1,8 @@
 from pathlib import Path
 import json
 import cv2
-import torch
-from insightface.app import FaceAnalysis
-from facenet_pytorch import InceptionResnetV1
-import torchvision.transforms as transforms
 import numpy as np
+from insightface.app import FaceAnalysis
 
 
 class FaceDetection:
@@ -26,7 +23,7 @@ class FaceDetection:
             rgb_image, faces = self._analyze_image(img_path)
 
             if faces:
-                print(f"{img_path.name}: Faces found: {faces}")
+                print(f"{img_path.name}: Faces found: {len(faces)}")
                 self._extract_and_save_faces(photo_id, rgb_image, faces)
             else:
                 print(f"{img_path.name}: No faces found")
@@ -49,11 +46,11 @@ class FaceDetection:
             if x2 <= x1 or y2 <= y1:
                 continue
 
-            face_img = rgb_image[y1:y2, x1:x2]
-
             face_coords = json.dumps([[x1, y1, x2, y2]])
 
-            face_encoding = self._compute_embedding(face_img)
+            if face.normed_embedding is None:
+                continue
+            face_encoding = face.normed_embedding
 
             self.face_repo.add(photo_id, face_encoding.tobytes(), face_coords)
 
@@ -66,27 +63,11 @@ class FaceDetection:
 
         faces = self.face_app.get(image)
 
-        print(f"{img_path.name}: Detected faces = {faces}")
+        print(f"{img_path.name}: Detected faces = {len(faces)}")
 
         return rgb_image, faces
 
-    def _compute_embedding(self, face_img: np.ndarray) -> np.ndarray:
-        face_tensor = self.transform(face_img).unsqueeze(0)  # [1,3,160,160]
-        with torch.no_grad():
-            embedding = self.resnet(face_tensor)  # [1,512]
-        return embedding.squeeze(0).numpy()  # 512-dim vector
-
     def _load_models(self) -> None:
-        # Load pre-trained Face Recognition model
-        self.resnet = InceptionResnetV1(pretrained='vggface2').eval()
-
         self.face_app = FaceAnalysis(
-            name='buffalo_s', allowed_modules=['detection'])
+            name='buffalo_s', allowed_modules=['detection', 'recognition'])
         self.face_app.prepare(ctx_id=-1, det_size=(640, 640))
-
-        self.transform = transforms.Compose([
-            transforms.ToPILImage(),
-            transforms.Resize((160, 160)),
-            transforms.ToTensor(),
-            transforms.Normalize([0.5], [0.5])
-        ])
