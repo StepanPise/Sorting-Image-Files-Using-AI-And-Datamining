@@ -36,3 +36,8 @@ class FaceRepository(BaseRepository):
             (person_id, face_id)
         )
         self.conn.commit()
+
+    def get_all_without_person_id(self):
+        self.cursor.execute(
+            "SELECT id, embedding FROM faces WHERE person_id IS NULL")
+        return self.cursor.fetchall()

@@ -15,6 +15,12 @@ class FaceDetection:
     def process_photo(self, img_path: Path, photo_id: int) -> None:
         row = self.photo_repo.get_by_id(photo_id)
 
+        # Check if photo exists in DB (not redundant)
+        if row is None:
+            print(
+                f"Error: Photo with ID {photo_id} ({img_path.name}) was not found in DB. Skipping.")
+            return
+        # Check if photo has already been analyzed to prevent redundant processing
         if row.get("already_analyzed"):
             print(f"{img_path.name}: Already analyzed, skipping.")
             return

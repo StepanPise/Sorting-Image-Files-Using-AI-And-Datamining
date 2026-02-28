@@ -30,7 +30,7 @@ class PhotoApp(ctk.CTk):
         self.criteria.subset_ids = []
         # self.criteria.subset_ids = None
 
-        self.window_width = 500
+        self.window_width = 750
         self.window_height = 600
         self.detect_faces_enabled = ctk.BooleanVar(value=True)
         self.subsets_enabled = ctk.BooleanVar(value=False)

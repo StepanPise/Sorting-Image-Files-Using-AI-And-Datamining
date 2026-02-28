@@ -49,3 +49,10 @@ class PersonRepository(BaseRepository):
             (avg_embedding_bytes, person_id)
         )
         self.conn.commit()
+
+    def update_name(self, person_id, new_name):
+        self.cursor.execute(
+            "UPDATE people SET name = %s WHERE id = %s",
+            (new_name, person_id)
+        )
+        self.conn.commit()
