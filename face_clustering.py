@@ -1,180 +1,133 @@
+from typing import Any
 import numpy as np
-from sklearn.cluster import DBSCAN
-from collections import Counter
+from sklearn.cluster import AgglomerativeClustering
 
 
 class FaceClustering:
 
-    def __init__(self, face_repo, person_repo):
+    def __init__(self, face_repo: Any, person_repo: Any):
         self.face_repo = face_repo
         self.person_repo = person_repo
+        self.threshold = 0.6
 
-    def resolve_identities(self):
-        print("CLUSTERING: Starting clustering process...")
-        faces = self._load_faces()
+    def resolve_identities(self) -> None:
+        print("CLUSTERING: Starting robust incremental clustering...")
 
-        if not faces:
-            print("CLUSTERING: No faces in database.")
+        unassigned_faces, known_faces = self._load_split_faces()
+
+        if not unassigned_faces:
             return
 
-        face_ids, embeddings, current_person_ids = zip(*faces)
-        embeddings_array = np.array(embeddings)
+        new_face_ids = [f[0] for f in unassigned_faces]
+        new_embs = np.array([f[1] for f in unassigned_faces])
 
-        # array([ 0, 0, 0, 1, 1, -1])
-        cluster_ids = self._cluster_embeddings(embeddings_array)
-        # array([-1, 0, 1])
-        unique_cluster_ids = np.unique(cluster_ids)
+        # LOCAL CLUSTERING: Cluster unassigned faces to find groups of similar faces
+        cluster_labels = self._run_local_clustering(new_embs)
+        unique_clusters = np.unique(cluster_labels)
 
-        people_avg_embeddings = self._load_people_embeddings()
+        known_person_ids = np.array(
+            [f[0] for f in known_faces]) if known_faces else np.array([])
+        known_embs = np.array([f[1] for f in known_faces]
+                              ) if known_faces else np.array([])
 
-        cluster_id_to_person_id = self._assign_clusters_to_people(
-            embeddings_array, cluster_ids, unique_cluster_ids,
-            people_avg_embeddings, current_person_ids
-        )
+        new_people_count = 0
+        matched_people_count = 0
 
-        self._update_faces_with_person_ids(
-            face_ids, cluster_ids, cluster_id_to_person_id)
+        # For each local cluster, try to match it to known people or create a new person
+        for cluster_id in unique_clusters:
+            cluster_indices = np.where(cluster_labels == cluster_id)[0]
+            cluster_embs = new_embs[cluster_indices]
 
-        print("CLUSTERING: Clustering process completed.")
-        print(f"CLUSTERING: Processed {len(face_ids)} faces.")
+            matched_person_id = None
 
-    def _load_faces(self):
+            if len(known_embs) > 0:
+                # Calculate cosine distances between ALL faces in this cluster
+                # and ALL faces in the known db simultaneously.
+                sim_matrix = np.dot(cluster_embs, known_embs.T)
+                distances = 1.0 - sim_matrix
+
+                # Find the closest match
+                min_dist = np.min(distances)
+
+                # If the closest match is within the threshold, consider it a match
+                if min_dist < self.threshold:
+                    best_match_idx = np.unravel_index(
+                        np.argmin(distances, axis=None), distances.shape)[1]
+                    matched_person_id = known_person_ids[best_match_idx]
+
+            if matched_person_id is not None:
+                final_person_id = matched_person_id
+                matched_people_count += 1
+            else:
+                existing_people = self.person_repo.get_all_people_data()
+                next_num = len(existing_people) + 1 if existing_people else 1
+                person_name = f"Person{next_num}"
+
+                dummy_bytes = np.zeros(512, dtype=np.float32).tobytes()
+                final_person_id = self.person_repo.create_person(
+                    person_name, dummy_bytes)
+                new_people_count += 1
+
+            # Update known embeddings with the new cluster's embeddings for future matches
+            for emb in cluster_embs:
+                if len(known_embs) == 0:
+                    known_embs = np.array([emb])
+                    known_person_ids = np.array([final_person_id])
+                else:
+                    known_embs = np.vstack([known_embs, emb])
+                    known_person_ids = np.append(
+                        known_person_ids, final_person_id)
+
+            # Assign person_id in DB to all faces in this cluster
+            for idx in cluster_indices:
+                self.face_repo.update_person_id(
+                    int(new_face_ids[idx]),
+                    int(final_person_id)
+                )
+
+        print(f"CLUSTERING: Done!")
+
+    def _normalize_l2(self, vector: np.ndarray) -> np.ndarray:
+        norm = np.linalg.norm(vector)
+        if norm == 0:
+            return vector
+        return vector / norm
+
+    def _run_local_clustering(self, embeddings_array: np.ndarray) -> np.ndarray:
+        if len(embeddings_array) < 2:
+            return np.array([0])
+
+        clustering = AgglomerativeClustering(
+            n_clusters=None,
+            distance_threshold=self.threshold,
+            metric='cosine',
+            linkage='average'
+        ).fit(embeddings_array)
+
+        return clustering.labels_
+
+    def _load_split_faces(self) -> tuple[list[tuple[int, np.ndarray]], list[tuple[int, np.ndarray]]]:
         rows = self.face_repo.get_all_embeddings()
-        faces = []
+        unassigned = []
+        known = []
 
         for row in rows:
             face_id = row['id']
-            embedding_bytes = row['embedding']
+            emb_bytes = row['embedding']
+            person_id = row['person_id']
 
-            current_person_id = None
-            if len(row) > 2:
-                current_person_id = row['person_id']
-
-            if isinstance(embedding_bytes, memoryview):
-                embedding_bytes = embedding_bytes.tobytes()
-
-            if not embedding_bytes:
+            if not emb_bytes:
                 continue
 
-            embedding = np.frombuffer(embedding_bytes, dtype=np.float32)
-            faces.append((face_id, embedding, current_person_id))
+            if isinstance(emb_bytes, memoryview):
+                emb_bytes = emb_bytes.tobytes()
 
-        return faces
+            emb = np.frombuffer(emb_bytes, dtype=np.float32)
+            emb = self._normalize_l2(emb)
 
-    def _cluster_embeddings(self, embeddings_array):
-        # eps 0.45 - mabye change later
-        clustering = DBSCAN(metric='cosine', eps=0.45,
-                            min_samples=1).fit(embeddings_array)
-        return clustering.labels_
-
-    def _load_people_embeddings(self):
-        people_rows = self.person_repo.get_all_people_data()
-        people_avg_embeddings = {}
-
-        for person_id, name, avg_bytes in people_rows:
-            if avg_bytes is None:
-                continue
-
-            if isinstance(avg_bytes, memoryview):
-                avg_bytes = avg_bytes.tobytes()
-            elif isinstance(avg_bytes, str):
-                try:
-                    if avg_bytes.startswith("\\x"):
-                        avg_bytes = bytes.fromhex(avg_bytes[2:])
-                    else:
-                        avg_bytes = avg_bytes.encode('latin1')
-                except Exception:
-                    continue
-
-            if len(avg_bytes) % 4 != 0:
-                continue
-
-            arr = np.frombuffer(avg_bytes, dtype=np.float32)
-            people_avg_embeddings[person_id] = arr
-
-        return people_avg_embeddings
-
-    def _assign_clusters_to_people(self, embeddings_array, cluster_ids, unique_cluster_ids,
-                                   people_avg_embeddings, current_person_ids):
-        cluster_id_to_person_id = {}
-
-        existing_ids = list(people_avg_embeddings.keys())
-        next_person_num = (max(existing_ids) + 1) if existing_ids else 1
-
-        for cluster_id in unique_cluster_ids:
-            if cluster_id == -1:
-                continue
-
-            cluster_indices = [i for i, l in enumerate(
-                cluster_ids) if l == cluster_id]
-
-            # Are there any existing people IDs in this cluster?
-            owners = [current_person_ids[i]
-                      for i in cluster_indices if current_person_ids[i] is not None]
-
-            dominant_person_id = None
-            if owners:
-                dominant_person_id = Counter(owners).most_common(1)[0][0]
-
-            cluster_embeddings = embeddings_array[cluster_indices]
-            cluster_avg = np.mean(cluster_embeddings, axis=0)
-
-            final_person_id = None
-
-            # A = At least one person in cluster is EXISTING
-            if dominant_person_id is not None:
-                final_person_id = dominant_person_id
-
-            # B = All people from this cluster are NEW
+            if person_id is None:
+                unassigned.append((face_id, emb))
             else:
-                matched_id = self._find_matching_person(
-                    cluster_avg, people_avg_embeddings)
-                if matched_id:
-                    final_person_id = matched_id
+                known.append((person_id, emb))
 
-            if final_person_id is not None:
-                person_id = final_person_id
-
-                if person_id in people_avg_embeddings:
-                    all_embeddings = np.vstack(
-                        [cluster_embeddings, people_avg_embeddings[person_id].reshape(1, -1)])
-                    new_avg = np.mean(all_embeddings, axis=0)
-                else:
-                    new_avg = cluster_avg
-
-                self.person_repo.update_embedding(person_id, new_avg.tobytes())
-                people_avg_embeddings[person_id] = new_avg
-
-            else:
-                person_name = f"Person {next_person_num}"
-                avg_bytes = cluster_avg.tobytes()
-                person_id = self.person_repo.create_person(
-                    person_name, avg_bytes)
-
-                people_avg_embeddings[person_id] = cluster_avg
-                next_person_num += 1
-
-            cluster_id_to_person_id[cluster_id] = person_id
-
-        return cluster_id_to_person_id
-
-    def _find_matching_person(self, cluster_avg, people_avg_embeddings, threshold=0.45):
-        best_match_id = None
-        min_dist = float('inf')
-
-        for person_id, avg_emb in people_avg_embeddings.items():
-            if avg_emb is not None:
-                dist = np.linalg.norm(cluster_avg - avg_emb)
-                if dist < threshold and dist < min_dist:
-                    min_dist = dist
-                    best_match_id = person_id
-        return best_match_id
-
-    def _update_faces_with_person_ids(self, face_ids, cluster_ids, cluster_id_to_person_id):
-        for face_id, cluster_id in zip(face_ids, cluster_ids):
-            if cluster_id == -1:
-                continue
-
-            person_id = cluster_id_to_person_id.get(cluster_id)
-            if person_id:
-                self.face_repo.update_person_id(face_id, person_id)
+        return unassigned, known
