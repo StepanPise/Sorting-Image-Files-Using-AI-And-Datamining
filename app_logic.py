@@ -140,7 +140,6 @@ class PhotoController:
             left, top, right, bottom = biggest_face
             MARGIN = 30
 
-            # Ořez s okrajem
             img_crop = img.crop((
                 max(0, left - MARGIN),
                 max(0, top - MARGIN),
@@ -189,7 +188,6 @@ class PhotoController:
         return count, errors
 
     def compute_hash(self, path: Path) -> str:
-
         BUF_SIZE = 65536  # 64KB
         sha256 = hashlib.sha256()
         with open(path, "rb") as f:
