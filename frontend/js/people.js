@@ -29,7 +29,7 @@ async function loadPeople() {
 
             personDiv.innerHTML = `
                 <div class="w-10 h-10 rounded-full bg-[#2b5c92] flex-shrink-0 overflow-hidden">
-                    <img src="/api/people/${person.id}/thumbnail" class="w-full h-full object-cover" onerror="this.style.display='none'">
+                    <img src="/api/people/${person.id}/thumbnail?t=${Date.now()}" class="w-full h-full object-cover" onerror="this.style.display='none'">
                 </div>
                 
                 <input type="text" id="input-${person.id}" value="${person.name}" 
