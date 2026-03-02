@@ -80,3 +80,35 @@ async function savePersonName(personId, inputElement) {
         console.error("Communication error:", error);
     }
 }
+
+
+async function startScanning() {
+    const detectFaces = document.getElementById('chk-detect').checked;
+    
+    const btn = document.getElementById('btn-scan');
+    const originalText = btn.innerText;
+    btn.innerText = "Scanning...";
+    btn.disabled = true;
+    btn.classList.add("opacity-50", "cursor-not-allowed");
+
+    try {
+        const response = await fetch('/api/scanner/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ detect_faces: detectFaces})
+        });
+        
+        const data = await response.json();
+        
+
+        if (data.status === "ok") {
+            loadPeople(); 
+        }
+    } catch (error) {
+        console.error("Scanning error:", error);
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+        btn.classList.remove("opacity-50", "cursor-not-allowed");
+    }
+}

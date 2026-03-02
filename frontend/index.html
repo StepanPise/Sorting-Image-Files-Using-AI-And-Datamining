@@ -29,6 +29,8 @@
     >
       <div class="flex items-center gap-8">
         <button
+          id="btn-scan"
+          onclick="startScanning()"
           class="bg-[#2b5c92] hover:bg-[#3a75b8] transition px-6 py-2 rounded text-white font-semibold shadow"
         >
           Select Folder
@@ -36,7 +38,12 @@
 
         <div class="flex gap-6">
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked class="w-4 h-4 accent-[#2b5c92]" />
+            <input
+              type="checkbox"
+              id="chk-detect"
+              checked
+              class="w-4 h-4 accent-[#2b5c92]"
+            />
             <span class="text-sm font-medium">Detect Faces</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">

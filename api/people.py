@@ -32,6 +32,7 @@ async def update_person(person_id: int, request: PersonUpdate):
 async def get_thumbnail(person_id: int):
     pil_img = controller.get_person_thumbnail(person_id)
     if pil_img:
+        pil_img = pil_img.convert("RGB")
         buf = io.BytesIO()
         pil_img.save(buf, format="JPEG")
         return Response(content=buf.getvalue(), media_type="image/jpeg")
