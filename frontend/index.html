@@ -48,7 +48,9 @@
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" class="w-4 h-4 accent-[#2b5c92]" />
-            <span class="text-sm font-medium">Use Subsets</span>
+            <span class="text-sm font-medium"
+              >Use Only Current Folder Content</span
+            >
           </label>
         </div>
       </div>
@@ -59,6 +61,23 @@
         Export Photos
       </button>
     </header>
+
+    <div
+      id="progress-container"
+      class="hidden w-full bg-[#1e1e1e] border-b border-gray-700"
+    >
+      <div class="flex justify-between text-xs text-gray-400 px-6 py-1">
+        <span id="progress-text"></span>
+        <span id="progress-percent">0%</span>
+      </div>
+      <div class="h-1 w-full bg-gray-800">
+        <div
+          id="progress-bar"
+          class="h-1 bg-green-500 transition-all duration-300"
+          style="width: 0%"
+        ></div>
+      </div>
+    </div>
 
     <div class="flex flex-1 overflow-hidden">
       <aside
@@ -83,10 +102,23 @@
           </button>
         </div>
 
-        <div class="p-4 text-center border-b border-gray-700 bg-[#2d2d2d]">
-          <h2 class="text-sm font-semibold text-gray-300">
-            Sort by Found People
-          </h2>
+        <div
+          class="p-4 border-b border-gray-700 bg-[#2d2d2d] flex justify-between items-center"
+        >
+          <h2 class="text-sm font-semibold text-gray-300">Found People</h2>
+          <div class="flex items-center gap-2">
+            <label for="min-photos" class="text-xs text-gray-400"
+              >Min photos per person:</label
+            >
+            <input
+              type="number"
+              id="min-photos"
+              value="2"
+              min="1"
+              onchange="loadPeople()"
+              class="w-12 bg-[#1e1e1e] text-white text-xs px-1 py-1 rounded border border-gray-600 focus:outline-none focus:border-[#2b5c92] transition"
+            />
+          </div>
         </div>
 
         <div class="flex-1 overflow-y-auto p-4 space-y-2" id="people-list">
@@ -116,6 +148,7 @@
 
     <script src="/frontend/js/people.js"></script>
     <script src="/frontend/js/photos.js"></script>
+    <script src="/frontend/js/scanner.js"></script>
 
     <script>
       window.addEventListener("DOMContentLoaded", () => {

@@ -50,25 +50,28 @@ class PhotoController:
             return
 
         for i, img_path in enumerate(image_paths):
-            # 1. Get metadata
-            photo_id = self._scan_metadata(img_path)
+            try:
+                # 1. Get metadata
+                photo_id = self._scan_metadata(img_path)
 
-            # add current batch photo ids
-            if photo_id:
-                self.current_batch_ids.add(photo_id)
+                # add current batch photo ids
+                if photo_id:
+                    self.current_batch_ids.add(photo_id)
 
-            # 2. Face detection
-            if detect_faces:
-                self.face_detector.process_photo(img_path, photo_id)
+                # 2. Face detection
+                if detect_faces:
+                    self.face_detector.process_photo(img_path, photo_id)
+            except Exception as e:
+                print(f"Error processing {img_path}: {e}")
+                self.db.conn.rollback()
 
             if callback:
-                callback(i/total_photos, i/total_photos)
+                callback(i/total_photos, (i/total_photos)*100)
 
         # 2. Face clustering
         if detect_faces:
             self.face_clustering.resolve_identities()
 
-        # Keep if callbacks??
         if callback:
             callback(1.0, "Done!")
 

@@ -1,5 +1,5 @@
 import io
-from fastapi import APIRouter, Response, HTTPException
+from fastapi import APIRouter, Response, HTTPException, Query
 from pydantic import BaseModel
 from typing import Optional
 from api.dependencies import controller
@@ -15,9 +15,18 @@ class PersonUpdate(BaseModel):
 
 
 @router.get("/")
-async def get_people():
+async def get_people(min_photos: int = Query(2)):
     people = controller.get_all_people()
-    return {"status": "ok", "count": len(people), "data": people}
+
+    filtered_people = []
+
+    for person in people:
+        faces = controller.face_repo.get_faces_by_person_id(person["id"])
+
+        if faces and len(faces) >= min_photos:
+            filtered_people.append(person)
+
+    return {"status": "ok", "count": len(filtered_people), "data": filtered_people}
 
 
 @router.patch("/{person_id}")
