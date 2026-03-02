@@ -15,6 +15,7 @@ from face_detection import FaceDetection
 from repositories.photo_repo import PhotoRepository
 from repositories.face_repo import FaceRepository
 from repositories.person_repo import PersonRepository
+from structures import FilterCriteria
 
 
 class PhotoController:
@@ -23,6 +24,8 @@ class PhotoController:
         self.photo_repo = PhotoRepository(self.db)
         self.face_repo = FaceRepository(self.db)
         self.person_repo = PersonRepository(self.db)
+
+        self.criteria = FilterCriteria()
 
         self.face_detector = FaceDetection(self.photo_repo, self.face_repo)
         self.face_clustering = FaceClustering(self.face_repo, self.person_repo)
@@ -205,8 +208,8 @@ class PhotoController:
     def update_person_name(self, person_id, new_name):
         self.person_repo.update_name(person_id, new_name)
 
-    def get_photos_from_repo_for_gallery(self, filtercrits):
-        photos = self.photo_repo.get_photos(filtercrits)
+    def get_photos_from_repo_for_gallery(self):
+        photos = self.photo_repo.get_photos(self.criteria)
         return photos
 
     def load_location_tree(self, subset_ids=None):

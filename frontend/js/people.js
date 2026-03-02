@@ -38,6 +38,7 @@ async function loadPeople() {
 
             container.appendChild(personDiv);
         });
+        
     } catch (error) {
         console.error("Error:", error);
     }
@@ -52,6 +53,8 @@ function togglePersonSelection(personId, element) {
         element.className = 'flex items-center gap-3 p-2 rounded-lg cursor-pointer transition border border-[#2b5c92] bg-[#2b5c92]/20';
     }
     console.log("Selected IDs:", Array.from(selectedPersonIds));
+
+    loadPhotos(Array.from(selectedPersonIds));
 }
 
 async function savePersonName(personId, inputElement) {

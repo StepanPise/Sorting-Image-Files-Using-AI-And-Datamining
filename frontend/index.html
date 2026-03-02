@@ -110,38 +110,18 @@
         <div
           class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6"
           id="photo-grid"
-        >
-          <div
-            class="aspect-square bg-[#333333] rounded overflow-hidden border border-gray-700 hover:border-[#2b5c92] transition cursor-pointer shadow-lg relative group"
-          >
-            <img
-              src="https://picsum.photos/400?random=1"
-              class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition"
-            />
-          </div>
-          <div
-            class="aspect-square bg-[#333333] rounded overflow-hidden border border-gray-700 hover:border-[#2b5c92] transition cursor-pointer shadow-lg relative group"
-          >
-            <img
-              src="https://picsum.photos/400?random=2"
-              class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition"
-            />
-          </div>
-          <div
-            class="aspect-square bg-[#333333] rounded overflow-hidden border border-gray-700 hover:border-[#2b5c92] transition cursor-pointer shadow-lg relative group"
-          >
-            <img
-              src="https://picsum.photos/400?random=3"
-              class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition"
-            />
-          </div>
-        </div>
+        ></div>
       </main>
     </div>
 
     <script src="/frontend/js/people.js"></script>
+    <script src="/frontend/js/photos.js"></script>
+
     <script>
-      window.addEventListener("DOMContentLoaded", loadPeople);
+      window.addEventListener("DOMContentLoaded", () => {
+        loadPeople();
+        loadPhotos();
+      });
     </script>
   </body>
 </html>
