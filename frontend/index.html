@@ -47,7 +47,12 @@
             <span class="text-sm font-medium">Detect Faces</span>
           </label>
           <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" class="w-4 h-4 accent-[#2b5c92]" />
+            <input
+              type="checkbox"
+              id="chk-current-folder"
+              onchange="toggleCurrentFolderFilter()"
+              class="w-4 h-4 accent-[#2b5c92]"
+            />
             <span class="text-sm font-medium"
               >Use Only Current Folder Content</span
             >

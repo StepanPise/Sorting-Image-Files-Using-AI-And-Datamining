@@ -205,8 +205,8 @@ class PhotoController:
 #  WRAPPER METODS FOR UI (app.py)
 # =========================================================================
 
-    def get_all_people(self, subset_ids=None):
-        return self.person_repo.get_all_with_faces(subset_ids)
+    def get_all_people(self):
+        return self.person_repo.get_all_with_faces(self.criteria.subset_ids)
 
     def update_person_name(self, person_id, new_name):
         self.person_repo.update_name(person_id, new_name)

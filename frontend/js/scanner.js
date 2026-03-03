@@ -18,10 +18,28 @@ async function checkProgress() {
     }
 }
 
+async function toggleCurrentFolderFilter() {
+    const isChecked = document.getElementById('chk-current-folder').checked;
+
+    try {
+        await fetch('/api/scanner/toggle-current-folder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ use_current_folder_only: isChecked })
+        });
+        
+        loadPeople();
+        loadPhotos();
+    } catch (error) {
+        console.error("Error toggling filter:", error);
+    }
+}
+
 async function startScanning() {
     const detectFaces = document.getElementById('chk-detect').checked;
     const btn = document.getElementById('btn-scan');
     const originalText = btn.innerText;
+
     
     btn.innerText = "Scanning...";
     btn.disabled = true;
@@ -34,13 +52,14 @@ async function startScanning() {
         const response = await fetch('/api/scanner/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ detect_faces: detectFaces })
+            body: JSON.stringify({ detect_faces: detectFaces})
         });
         
         const data = await response.json();
         if (data.status === "ok") {
 
             loadPeople(); 
+            loadPhotos();
         }
     } catch (error) {
         console.error("Scanning error:", error);
