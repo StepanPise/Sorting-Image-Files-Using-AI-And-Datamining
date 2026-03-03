@@ -143,18 +143,37 @@ class PhotoController:
 
         try:
             img = Image.open(biggest_photo_path)
+            img = ImageOps.exif_transpose(img)
+
             left, top, right, bottom = biggest_face
-            MARGIN = 30
 
-            img_crop = img.crop((
-                max(0, left - MARGIN),
-                max(0, top - MARGIN),
-                min(img.width, right + MARGIN),
-                min(img.height, bottom + MARGIN)
-            ))
-            return ImageOps.exif_transpose(img_crop)
+            face_width = right - left
+            face_height = bottom - top
 
-        except Exception:
+            center_x = left + (face_width / 2)
+            center_y = top + (face_height / 2)
+
+            max_side = max(face_width, face_height)
+            target_size = max_side * 1.4
+
+            # face + padding
+            new_left = center_x - (target_size / 2)
+            new_top = center_y - (target_size / 2)
+            new_right = center_x + (target_size / 2)
+            new_bottom = center_y + (target_size / 2)
+
+            # boundaries check
+            new_left = max(0, new_left)
+            new_top = max(0, new_top)
+            new_right = min(img.width, new_right)
+            new_bottom = min(img.height, new_bottom)
+
+            img_crop = img.crop((new_left, new_top, new_right, new_bottom))
+
+            return img_crop
+
+        except Exception as e:
+            print(f"Thumbnail crop error: {e}")
             return None
 
     def close(self):
