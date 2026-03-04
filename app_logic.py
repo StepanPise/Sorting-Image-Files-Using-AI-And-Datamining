@@ -234,5 +234,5 @@ class PhotoController:
         photos = self.photo_repo.get_photos(self.criteria)
         return photos
 
-    def load_location_tree(self, subset_ids=None):
-        return self.photo_repo.get_unique_locations(subset_ids)
+    def load_location_tree(self):
+        return self.photo_repo.get_unique_locations(self.criteria.subset_ids)

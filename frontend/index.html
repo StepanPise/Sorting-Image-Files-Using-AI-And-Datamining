@@ -89,51 +89,102 @@
         class="w-80 bg-[#252526] flex flex-col border-r border-gray-700 shadow-xl z-0"
       >
         <div class="flex text-sm font-medium bg-[#1e1e1e]">
-          <button class="flex-1 py-3 bg-[#2b5c92] text-white">People</button>
           <button
+            id="btn-tab-people"
+            onclick="switchTab('people')"
+            class="flex-1 py-3 bg-[#2b5c92] text-white transition"
+          >
+            People
+          </button>
+          <button
+            id="btn-tab-location"
+            onclick="switchTab('location')"
             class="flex-1 py-3 text-gray-400 hover:text-white hover:bg-[#2d2d2d] transition"
           >
             Location
           </button>
           <button
+            id="btn-tab-time"
+            onclick="switchTab('time')"
             class="flex-1 py-3 text-gray-400 hover:text-white hover:bg-[#2d2d2d] transition"
           >
             Time
           </button>
           <button
+            id="btn-tab-others"
+            onclick="switchTab('others')"
             class="flex-1 py-3 text-gray-400 hover:text-white hover:bg-[#2d2d2d] transition"
           >
             Others
           </button>
         </div>
 
-        <div
-          class="p-4 border-b border-gray-700 bg-[#2d2d2d] flex justify-between items-center"
-        >
-          <h2 class="text-sm font-semibold text-gray-300">Found People</h2>
-          <div class="flex items-center gap-2">
-            <label for="min-photos" class="text-xs text-gray-400"
-              >Min photos per person:</label
-            >
-            <input
-              type="number"
-              id="min-photos"
-              value="2"
-              min="1"
-              onchange="loadPeople()"
-              class="w-12 bg-[#1e1e1e] text-white text-xs px-1 py-1 rounded border border-gray-600 focus:outline-none focus:border-[#2b5c92] transition"
-            />
+        <div id="tab-people" class="flex flex-col flex-1 overflow-hidden">
+          <div
+            class="p-4 border-b border-gray-700 bg-[#2d2d2d] flex justify-between items-center"
+          >
+            <h2 class="text-sm font-semibold text-gray-300">Found People</h2>
+            <div class="flex items-center gap-2">
+              <label for="min-photos" class="text-xs text-gray-400"
+                >Min photos per person:</label
+              >
+              <input
+                type="number"
+                id="min-photos"
+                value="2"
+                min="1"
+                onchange="loadPeople()"
+                class="w-12 bg-[#1e1e1e] text-white text-xs px-1 py-1 rounded border border-gray-600 focus:outline-none focus:border-[#2b5c92] transition"
+              />
+            </div>
+          </div>
+
+          <div class="flex-1 overflow-y-auto p-4 space-y-2" id="people-list">
+            <p class="text-gray-500 text-center mt-10 text-sm">
+              Loading people data...
+            </p>
           </div>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-4 space-y-2" id="people-list">
-          <p class="text-gray-500 text-center mt-10 text-sm">
-            Loading people data...
-          </p>
+        <div id="tab-location" class="hidden flex-col flex-1 overflow-hidden">
+          <div class="p-4 border-b border-gray-700 bg-[#2d2d2d]">
+            <h2 class="text-sm font-semibold text-gray-300">Places</h2>
+          </div>
+          <div
+            class="flex-1 overflow-y-auto p-4 space-y-1 text-sm"
+            id="location-list"
+          >
+            <p class="text-gray-500 text-center mt-10">Loading locations...</p>
+          </div>
+        </div>
+
+        <div id="tab-time" class="hidden flex-col flex-1 overflow-hidden">
+          <div class="p-4 border-b border-gray-700 bg-[#2d2d2d]">
+            <h2 class="text-sm font-semibold text-gray-300">Timeline</h2>
+          </div>
+          <div
+            class="flex-1 overflow-y-auto p-4 space-y-1 text-sm"
+            id="time-list"
+          >
+            <p class="text-gray-500 text-center mt-10">Loading timeline...</p>
+          </div>
+        </div>
+
+        <div id="tab-others" class="hidden flex-col flex-1 overflow-hidden">
+          <div class="p-4 border-b border-gray-700 bg-[#2d2d2d]">
+            <h2 class="text-sm font-semibold text-gray-300">Others</h2>
+          </div>
+          <div
+            class="flex-1 overflow-y-auto p-4 space-y-1 text-sm"
+            id="others-list"
+          >
+            <p class="text-gray-500 text-center mt-10">Loading other...</p>
+          </div>
         </div>
 
         <div class="p-4 bg-[#252526] border-t border-gray-700">
           <button
+            onclick="resetAllFilters()"
             class="w-full bg-[#2b5c92] hover:bg-[#3a75b8] transition py-2 rounded text-sm text-white font-semibold shadow"
           >
             Reset All Filters
@@ -154,7 +205,11 @@
     <script src="/frontend/js/people.js"></script>
     <script src="/frontend/js/photos.js"></script>
     <script src="/frontend/js/scanner.js"></script>
-
+    <script src="/frontend/js/switch_tab.js"></script>
+    <!-- <script src="/frontend/js/locations.js"></script>
+    <script src="/frontend/js/time.js"></script>
+    <script src="/frontend/js/others.js"></script>
+      -->
     <script>
       window.addEventListener("DOMContentLoaded", () => {
         loadPeople();
