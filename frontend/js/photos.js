@@ -13,6 +13,9 @@ async function loadPhotos() {
             params.append('use_current_folder', 'true');
         }
 
+        if (selectedDateFrom) params.append('date_from', selectedDateFrom);
+        if (selectedDateTo) params.append('date_to', selectedDateTo);
+
         const url = `/api/photos?${params.toString()}`;
         console.log("Fetching URL:", url);
         

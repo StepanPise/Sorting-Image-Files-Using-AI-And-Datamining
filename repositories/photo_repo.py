@@ -1,5 +1,5 @@
 from .base_repo import BaseRepository
-from structures import FilterCriteria
+from filter_criteria import FilterCriteria
 
 
 class PhotoRepository(BaseRepository):

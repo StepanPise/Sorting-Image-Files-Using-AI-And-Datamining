@@ -15,7 +15,7 @@ from face_detection import FaceDetection
 from repositories.photo_repo import PhotoRepository
 from repositories.face_repo import FaceRepository
 from repositories.person_repo import PersonRepository
-from structures import FilterCriteria
+from filter_criteria import FilterCriteria
 
 
 class PhotoController:
