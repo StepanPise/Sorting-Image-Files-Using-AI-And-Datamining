@@ -19,20 +19,8 @@ async function checkProgress() {
 }
 
 async function toggleCurrentFolderFilter() {
-    const isChecked = document.getElementById('chk-current-folder').checked;
-
-    try {
-        await fetch('/api/scanner/toggle-current-folder', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ use_current_folder_only: isChecked })
-        });
-        
-        loadPeople();
-        loadPhotos();
-    } catch (error) {
-        console.error("Error toggling filter:", error);
-    }
+    await loadPeople();
+    loadPhotos();
 }
 
 async function startScanning() {

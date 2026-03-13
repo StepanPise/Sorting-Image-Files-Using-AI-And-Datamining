@@ -15,16 +15,13 @@ class PersonUpdate(BaseModel):
 
 
 @router.get("/")
-async def get_people(min_photos: int = Query(2)):
-    people = controller.get_all_people()
+async def get_people(min_photos: int = Query(2), use_current_folder: bool = Query(False)):
 
-    filtered_people = []
+    subset_ids = list(
+        controller.current_batch_ids) if use_current_folder else None
 
-    for person in people:
-        faces = controller.face_repo.get_faces_by_person_id(person["id"])
-
-        if faces and len(faces) >= min_photos:
-            filtered_people.append(person)
+    filtered_people = controller.get_all_people(
+        subset_ids=subset_ids, min_photos=min_photos)
 
     return {"status": "ok", "count": len(filtered_people), "data": filtered_people}
 

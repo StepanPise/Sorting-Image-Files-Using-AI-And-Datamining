@@ -25,8 +25,6 @@ class PhotoController:
         self.face_repo = FaceRepository(self.db)
         self.person_repo = PersonRepository(self.db)
 
-        self.criteria = FilterCriteria()
-
         self.face_detector = FaceDetection(self.photo_repo, self.face_repo)
         self.face_clustering = FaceClustering(self.face_repo, self.person_repo)
         self.current_batch_ids = set()
@@ -221,18 +219,18 @@ class PhotoController:
         return sha256.hexdigest()
 
 # =========================================================================
-#  WRAPPER METODS FOR UI (app.py)
+#  WRAPPER METODS FOR API
 # =========================================================================
 
-    def get_all_people(self):
-        return self.person_repo.get_all_with_faces(self.criteria.subset_ids)
+    def get_all_people(self, subset_ids=None, min_photos=1):
+        return self.person_repo.get_all_with_faces(subset_ids, min_photos)
 
     def update_person_name(self, person_id, new_name):
         self.person_repo.update_name(person_id, new_name)
 
-    def get_photos_from_repo_for_gallery(self):
-        photos = self.photo_repo.get_photos(self.criteria)
+    def get_photos_from_repo_for_gallery(self, criteria):
+        photos = self.photo_repo.get_photos(criteria)
         return photos
 
-    def load_location_tree(self):
-        return self.photo_repo.get_unique_locations(self.criteria.subset_ids)
+    def load_location_tree(self, subset_ids=None):
+        return self.photo_repo.get_unique_locations(subset_ids)

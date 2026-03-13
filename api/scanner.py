@@ -64,17 +64,4 @@ async def scan_folder(options: ScanOptions):
         callback=progress_data.update_progress
     )
 
-    if controller.criteria.subset_ids is not None:
-        controller.criteria.subset_ids = list(controller.current_batch_ids)
-
     return {"status": "ok", "message": f"Scanned: {folder_path}"}
-
-
-@router.post("/toggle-current-folder")
-def toggle_current_folder(request: ToggleRequest):
-    if request.use_current_folder_only:
-        controller.criteria.subset_ids = list(controller.current_batch_ids)
-    else:
-        controller.criteria.subset_ids = None
-
-    return {"status": "ok"}

@@ -1,14 +1,27 @@
-let selectedPersonIds = new Set();
-
 async function loadPeople() {
     try {
-        
         const minPhotosInput = document.getElementById('min-photos');
         const minPhotos = minPhotosInput ? minPhotosInput.value : 2;
 
-        const response = await fetch(`/api/people?min_photos=${minPhotos}`);
+        const useCurrentFolder = isCurrentFolderOnly();
+
+        const response = await fetch(`/api/people/?min_photos=${minPhotos}&use_current_folder=${useCurrentFolder}`);
         const result = await response.json();
         
+
+        // selected ids cleaning logic
+        const validIds = new Set();
+        if (result.data) {
+             result.data.forEach(p => validIds.add(p.id));
+        }
+        for (const id of selectedPersonIds) {
+            if (!validIds.has(id)) {
+                selectedPersonIds.delete(id);
+                console.log(`Removed person ${id} from selection.`);
+            }
+        }
+
+
         const container = document.getElementById('people-list');
         container.innerHTML = '';
 
@@ -58,7 +71,7 @@ function togglePersonSelection(personId, element) {
     }
     console.log("Selected IDs:", Array.from(selectedPersonIds));
 
-    loadPhotos(Array.from(selectedPersonIds));
+    loadPhotos();
 }
 
 async function savePersonName(personId, inputElement) {

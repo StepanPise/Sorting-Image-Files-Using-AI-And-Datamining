@@ -1,8 +1,9 @@
 import os
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
-from typing import Optional
+from typing import List, Optional
 from api.dependencies import controller
+from structures import FilterCriteria
 
 router = APIRouter(
     prefix="/api/photos",
@@ -11,15 +12,22 @@ router = APIRouter(
 
 
 @router.get("/")
-async def get_photos(people: Optional[str] = Query(None)):
-    selected_ids = []
+async def get_photos(people: Optional[str] = Query(None), country: List[str] = Query(default=[]),
+                     city: List[str] = Query(default=[]), use_current_folder: bool = Query(False)):
+    temp_criteria = FilterCriteria()
+
     if people:
-        # example = http://127.0.0.1:8000/api/photos?people=1,4
-        selected_ids = [int(x) for x in people.split(",") if x.isdigit()]
+        # example = http://127.0.0.1:8000/api/photos?people=1,4,5
+        temp_criteria.person_ids = [int(x)
+                                    for x in people.split(",") if x.isdigit()]
 
-    controller.criteria.person_ids = selected_ids
+    temp_criteria.country = country
+    temp_criteria.city = city
 
-    photos = controller.get_photos_from_repo_for_gallery()
+    if use_current_folder:
+        temp_criteria.subset_ids = list(controller.current_batch_ids)
+
+    photos = controller.get_photos_from_repo_for_gallery(temp_criteria)
 
     return {"status": "ok", "count": len(photos), "data": photos}
 

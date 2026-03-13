@@ -7,24 +7,29 @@ class PersonRepository(BaseRepository):
         self.cursor.execute("SELECT * FROM people")
         return self.cursor.fetchall()
 
-    def get_all_with_faces(self, subset_ids=None):
+    def get_all_with_faces(self, subset_ids=None, min_photos=1):
         query = """
-            SELECT p.id, p.name
-            FROM people p
-            JOIN faces f ON f.person_id = p.id
-            JOIN photos ph ON ph.id = f.photo_id
-            WHERE 1=1
-        """
+                SELECT p.id, p.name
+                FROM people p
+                JOIN faces f ON p.id = f.person_id
+                JOIN (
+                    SELECT person_id, COUNT(DISTINCT photo_id) as total_photos
+                    FROM faces
+                    GROUP BY person_id
+                ) t1 ON t1.person_id = p.id
+                WHERE t1.total_photos >= %s
+            """
 
-        params = []
+        params = [min_photos]
+
         if subset_ids is not None:
             if len(subset_ids) == 0:
-                query += " AND 1=0"
+                query += " AND 1=0 "
             else:
-                query += " AND f.photo_id = ANY(%s)"
+                query += " AND f.photo_id = ANY(%s) "
                 params.append(list(subset_ids))
 
-        query += " GROUP BY p.id, p.name ORDER BY p.name ASC"
+        query += " GROUP BY p.id, p.name ORDER BY COUNT(DISTINCT f.photo_id) DESC "
 
         self.cursor.execute(query, tuple(params))
         return self.cursor.fetchall()

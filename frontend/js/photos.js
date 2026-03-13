@@ -1,15 +1,31 @@
-async function loadPhotos(personIds = []) {
+async function loadPhotos() {
     try {
-        let url = '/api/photos';
-        if (personIds.length > 0) {
-            url += `?people=${personIds.join(',')}`;
+        const params = new URLSearchParams();
+
+        if (selectedPersonIds.size > 0) {
+            params.append('people', Array.from(selectedPersonIds).join(','));
         }
 
+        selectedCountries.forEach(country => params.append('country', country));
+        selectedCities.forEach(city => params.append('city', city));
+
+        if (isCurrentFolderOnly()) {
+            params.append('use_current_folder', 'true');
+        }
+
+        const url = `/api/photos?${params.toString()}`;
+        console.log("Fetching URL:", url);
+        
         const response = await fetch(url);
         const result = await response.json();
 
         const grid = document.getElementById('photo-grid');
         grid.innerHTML = ''; 
+
+        if (!result.data || result.data.length === 0) {
+            grid.innerHTML = '<p class="text-gray-500 col-span-full text-center mt-10">No photos found.</p>';
+            return;
+        }
 
         result.data.forEach(photo => {
             const photoDiv = document.createElement('div');
