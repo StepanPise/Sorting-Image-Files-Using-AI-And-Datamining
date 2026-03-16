@@ -5,18 +5,32 @@ let selectedCities = new Set();
 let selectedDateFrom = '';
 let selectedDateTo = '';
 
+
 function isCurrentFolderOnly() {
     const chk = document.getElementById('chk-current-folder');
     return chk ? chk.checked : false;
 }
 
-function resetAllFilters(){
+
+async function refreshApp() {
+    await Promise.all([
+        loadPeople(),
+        loadLocations()
+    ]);
+    
+    await loadPhotos();
+}
+
+async function resetAllFilters(){
     selectedPersonIds = new Set();
     selectedCountries = new Set();
     selectedCities = new Set();
 
     clearTimeFilter()
 
-    loadPeople()
-    loadPhotos()
+    await refreshApp();
+}
+
+async function toggleCurrentFolderFilter() {
+    await refreshApp();
 }

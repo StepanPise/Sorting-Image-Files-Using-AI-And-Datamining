@@ -15,7 +15,7 @@ function switchTab(tab){
     document.getElementById(`btn-tab-${tab}`).className = "flex-1 py-3 bg-[#2b5c92] text-white transition";
 
 
-    if (tab === 'location') {
-        loadLocations();
-    }
+    // if (tab === 'location') {
+    //     loadLocations();
+    // }
 }

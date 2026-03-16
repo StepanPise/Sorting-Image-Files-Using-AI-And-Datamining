@@ -76,15 +76,23 @@ class PhotoRepository(BaseRepository):
             conditions.append(f"f.person_id IN ({placeholders})")
             params.extend(criteria.person_ids)
 
+        location_conditions = []
+
         if criteria.country:
             placeholders = ",".join(["%s"] * len(criteria.country))
-            conditions.append(f"p.location_data_country IN ({placeholders})")
+            location_conditions.append(
+                f"p.location_data_country IN ({placeholders})")
             params.extend(criteria.country)
 
         if criteria.city:
             placeholders = ",".join(["%s"] * len(criteria.city))
-            conditions.append(f"p.location_data_city IN ({placeholders})")
+            location_conditions.append(
+                f"p.location_data_city IN ({placeholders})")
             params.extend(criteria.city)
+
+        if location_conditions:
+            combined_location = "(" + " OR ".join(location_conditions) + ")"
+            conditions.append(combined_location)
 
         if criteria.date_from:
             conditions.append("p.time_data >= %s")

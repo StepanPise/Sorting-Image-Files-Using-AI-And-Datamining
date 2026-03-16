@@ -18,10 +18,6 @@ async function checkProgress() {
     }
 }
 
-async function toggleCurrentFolderFilter() {
-    await loadPeople();
-    loadPhotos();
-}
 
 async function startScanning() {
     const detectFaces = document.getElementById('chk-detect').checked;
@@ -45,9 +41,7 @@ async function startScanning() {
         
         const data = await response.json();
         if (data.status === "ok") {
-
-            loadPeople(); 
-            loadPhotos();
+            refreshApp();
         }
     } catch (error) {
         console.error("Scanning error:", error);

@@ -10,7 +10,7 @@ router = APIRouter(
 
 
 @router.get("/")
-def get_locations(use_current_folder: bool = Query(False)):
+async def get_locations(use_current_folder: bool = Query(False)):
     subset_ids = list(
         controller.current_batch_ids) if use_current_folder else None
 
