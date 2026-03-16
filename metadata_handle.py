@@ -68,7 +68,7 @@ class PhotoMetadata:
             lon = -lon
 
         try:
-            location = geolocator.reverse((lat, lon), language="cs")
+            location = geolocator.reverse((lat, lon), language="en")
             if location and location.raw.get("address"):
                 city = location.raw["address"].get("city") or \
                     location.raw["address"].get("town") or \

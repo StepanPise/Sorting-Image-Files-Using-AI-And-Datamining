@@ -79,21 +79,22 @@ class PhotoController:
         hash_val = self.compute_hash(path)
         time_data = PhotoMetadata.get_date(path)
         width, height = PhotoMetadata.get_size(path)
-        location_data = PhotoMetadata.get_location(path)
-
-        if location_data:
-            location_data_city, location_data_country = location_data
-        else:
-            location_data_city, location_data_country = None, None
 
         # Check if photo with this hash exists to prevent duplication
         exists = self.photo_repo.get_by_hash(hash_val)
 
         if exists:
             self.photo_repo.update_photo(
-                photo_id=exists["id"], path=path_str, filename=filename, location_data_city=location_data_city, location_data_country=location_data_country)
+                photo_id=exists["id"], path=path_str, filename=filename)
             return exists["id"]
         else:
+            location_data = PhotoMetadata.get_location(path)
+
+            if location_data:
+                location_data_city, location_data_country = location_data
+            else:
+                location_data_city, location_data_country = None, None
+
             new_id = self.photo_repo.insert_photo(
                 path=path_str, filename=filename, hash=hash_val,
                 location_data_city=location_data_city, time_data=time_data,

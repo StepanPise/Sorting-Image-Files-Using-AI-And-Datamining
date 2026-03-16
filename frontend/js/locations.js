@@ -45,10 +45,15 @@ async function loadLocations() {
             
             const safeCountryId = 'country-' + Math.random().toString(36).substring(2, 11);
 
+            const countryCode = countryCodes[country];
+            const flagHtml = countryCode 
+                ? `<img src="https://flagcdn.com/24x18/${countryCode}.png" alt="${country}" class="w-5 h-4 object-cover inline-block rounded-sm shadow-sm">` 
+                : `📍`;
+
             groupDiv.innerHTML = `
                 <label class="flex items-center gap-2 cursor-pointer text-white font-bold mb-1 p-1 hover:bg-[#333333] rounded transition">
                     <input type="checkbox" onchange="toggleCountry('${country.replace(/'/g, "\\'")}', this.checked)" ${isCountrySelected ? 'checked' : ''} class="w-4 h-4 accent-[#2b5c92]">
-                    <span>${country}</span>
+                    <span>${flagHtml} ${country}</span>
                 </label>
                 <div class="pl-6 flex flex-col gap-1" id="${safeCountryId}"></div>
             `;
@@ -92,3 +97,5 @@ function toggleCity(city, isChecked) {
     }
     loadPhotos();
 }
+
+
