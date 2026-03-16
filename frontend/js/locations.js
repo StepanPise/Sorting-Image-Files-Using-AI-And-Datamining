@@ -98,4 +98,10 @@ function toggleCity(city, isChecked) {
     loadPhotos();
 }
 
+async function clearLocationFilter() {
+    if (selectedCountries.size === 0 && selectedCities.size === 0) return;
 
+    selectedCountries.clear();
+    selectedCities.clear();
+    await refreshApp();
+}

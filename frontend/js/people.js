@@ -100,3 +100,10 @@ async function savePersonName(personId, inputElement) {
         console.error("Communication error:", error);
     }
 }
+
+async function clearPeopleFilter() {
+    if (selectedPersonIds.size === 0) return; 
+
+    selectedPersonIds.clear();
+    await refreshApp();
+}
