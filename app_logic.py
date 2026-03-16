@@ -235,3 +235,6 @@ class PhotoController:
 
     def load_location_tree(self, subset_ids=None):
         return self.photo_repo.get_unique_locations(subset_ids)
+
+    def delete_photo(self, photo_id):
+        self.photo_repo.delete_photo(photo_id)

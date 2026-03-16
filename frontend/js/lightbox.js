@@ -52,7 +52,49 @@ document.addEventListener('keydown', (e) => {
 //-------BACKEND LOGIC-----------------
 
 async function deleteCurrentPhoto() {
+    const photo = currentPhotoArray[currentPhotoIndex];
+    
+    if (!confirm(`Are you sure you want to remove this photo from the database?\n${photo.filename}\n\n(The physical file will NOT be deleted from your disk)`)) return;
+    
+    try {
+        const response = await fetch(`/api/photos/${photo.id}`, { method: 'DELETE' });
+        const result = await response.json();
+
+        if (result.status === "ok") {
+            currentPhotoArray.splice(currentPhotoIndex, 1);
+            
+            refreshApp();
+
+            // Close lightbox if last photo was deleted
+            if (currentPhotoArray.length === 0) {
+                closeLightbox();
+            } else {
+                if (currentPhotoIndex >= currentPhotoArray.length) {
+                    currentPhotoIndex = currentPhotoArray.length - 1;
+                }
+                updateLightboxContent();
+            }
+        } else {
+            alert(`Failed to remove photo: ${result.message}`);
+        }
+    } catch (e) {
+        console.error("Communication error:", e);
+        alert("Server error occurred.");
+    }
 }
 
 async function openInExplorer() {
+    const photo = currentPhotoArray[currentPhotoIndex];
+    
+    try {
+        const response = await fetch(`/api/photos/${photo.id}/open_explorer`, { method: 'POST' });
+        const result = await response.json();
+        
+        if (result.status !== "ok") {
+            alert(`Failed to open Explorer: ${result.message}`);
+        }
+    } catch (e) {
+        console.error("Communication error:", e);
+        alert("Server error occurred.");
+    }
 }

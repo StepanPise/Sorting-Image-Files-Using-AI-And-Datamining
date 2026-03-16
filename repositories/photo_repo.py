@@ -157,3 +157,7 @@ class PhotoRepository(BaseRepository):
                 tree[country].append(city)
 
         return tree
+
+    def delete_photo(self, photo_id):
+        self.cursor.execute("DELETE FROM photos WHERE id = %s", (photo_id,))
+        self.conn.commit()

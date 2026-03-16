@@ -1,3 +1,4 @@
+import ctypes
 from datetime import datetime
 import os
 from fastapi import APIRouter, HTTPException, Query
@@ -61,6 +62,33 @@ async def get_photo_file(photo_id: int):
             status_code=404, detail=f"File missing: {file_path}")
 
     return FileResponse(file_path)
+
+
+@router.delete("/{photo_id}")
+async def delete_photo(photo_id: int):
+    controller.delete_photo(photo_id)
+    return {"status": "ok"}
+
+
+@router.post("/{photo_id}/open_explorer")
+async def open_in_explorer(photo_id: int):
+    try:
+        photo = controller.photo_repo.get_by_id(photo_id)
+        if not photo:
+            return {"status": "error", "message": "Photo not found"}
+
+        photo_path = os.path.abspath(os.path.normpath(photo['path']))
+
+        # simulates a quick ALT key press and relase to bring folder window to the foregorund
+        ctypes.windll.user32.keybd_event(0x12, 0, 0, 0)
+        ctypes.windll.user32.keybd_event(0x12, 0, 2, 0)
+
+        ctypes.windll.shell32.ShellExecuteW(
+            None, "open", "explorer.exe", f'/select,"{photo_path}"', None, 1)
+
+        return {"status": "ok"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 
 @router.post("/export")
