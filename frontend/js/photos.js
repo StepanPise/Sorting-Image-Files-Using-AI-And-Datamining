@@ -30,9 +30,11 @@ async function loadPhotos() {
             return;
         }
 
-        result.data.forEach(photo => {
+        result.data.forEach((photo, index) => {
             const photoDiv = document.createElement('div');
             photoDiv.className = 'aspect-square bg-[#333333] rounded overflow-hidden border border-gray-700 hover:border-[#2b5c92] transition cursor-pointer shadow-lg relative group';
+
+            photoDiv.onclick = () => openLightbox(index, result.data);
 
             photoDiv.innerHTML = `
                 <img src="/api/photos/${photo.id}/file?t=${Date.now()}" loading="lazy" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition">

@@ -257,6 +257,7 @@
     <script src="/frontend/js/time.js"></script>
     <script src="/frontend/js/locations.js"></script>
     <script src="/frontend/js/locations_emoji_list.js"></script>
+    <script src="/frontend/js/lightbox.js"></script>
     <!-- 
     <script src="/frontend/js/others.js"></script>
       -->
@@ -265,5 +266,63 @@
         refreshApp();
       });
     </script>
+
+    <div
+      id="lightbox"
+      class="fixed inset-0 bg-black/95 z-50 hidden flex-col justify-between items-center pb-6 pt-2 px-2 transition-opacity"
+    >
+      <div class="w-full flex justify-end">
+        <button
+          onclick="closeLightbox()"
+          class="text-gray-400 hover:text-white text-4xl px-6 py-2 transition"
+        >
+          &times;
+        </button>
+      </div>
+
+      <div
+        class="flex-1 w-full flex justify-between items-center overflow-hidden px-4"
+      >
+        <button
+          onclick="prevPhoto()"
+          class="text-gray-400 hover:text-white text-6xl p-4 transition drop-shadow-md select-none"
+        >
+          &#10094;
+        </button>
+
+        <div class="h-full flex flex-col justify-center items-center">
+          <img
+            id="lightbox-img"
+            src=""
+            class="max-h-full max-w-full object-contain rounded shadow-2xl"
+          />
+        </div>
+
+        <button
+          onclick="nextPhoto()"
+          class="text-gray-400 hover:text-white text-6xl p-4 transition drop-shadow-md select-none"
+        >
+          &#10095;
+        </button>
+      </div>
+
+      <div class="mt-4 flex flex-col items-center gap-3">
+        <div id="lightbox-info" class="text-gray-400 text-sm font-mono"></div>
+        <div class="flex gap-4">
+          <button
+            onclick="deleteCurrentPhoto()"
+            class="bg-red-900/80 hover:bg-red-600 text-white border border-red-700 hover:border-red-500 px-6 py-2 rounded font-semibold transition shadow flex items-center gap-2"
+          >
+            🗑️ Remove from DB
+          </button>
+          <button
+            onclick="openInExplorer()"
+            class="bg-[#2b5c92] hover:bg-[#3a75b8] text-white px-6 py-2 rounded font-semibold transition shadow flex items-center gap-2"
+          >
+            📁 Show in Explorer
+          </button>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
