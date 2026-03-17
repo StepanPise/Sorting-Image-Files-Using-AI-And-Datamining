@@ -76,8 +76,12 @@ async function exportPhotos() {
         
         const result = await response.json();
 
+        if (result.status === "cancelled") {
+                    return;
+        }
+
         if (result.status === "ok") {
-            alert(`Export successful!\nCopied ${result.exported} photos.\nErrors: ${result.errors}`);
+            // alert(`Export successful!\nCopied ${result.exported} photos.\nErrors: ${result.errors}`);
         } else {
             alert(`Export failed: ${result.message}`);
         }

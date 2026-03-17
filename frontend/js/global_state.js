@@ -74,3 +74,29 @@ async function loadPreferences() {
         console.error("Failed to load preferences:", e);
     }
 }
+
+async function wipeDatabase() {
+    const isConfirmed = confirm('This will delete ALL photos, faces, and people from the database.\n\nDo you want to continue?');
+    
+    if (!isConfirmed) {
+        return; 
+    }
+
+    try {
+        const response = await fetch('/api/system/wipe', {
+            method: 'POST'
+        });
+        
+        const result = await response.json();
+
+        if (result.status === "ok") {
+            window.location.reload(); 
+        } else {
+            alert("Error wiping database: " + result.message);
+        }
+
+    } catch (error) {
+        console.error("Communication error during database wipe:", error);
+        alert("Failed to communicate with the server.");
+    }
+}

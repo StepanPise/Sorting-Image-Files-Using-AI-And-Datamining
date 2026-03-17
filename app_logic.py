@@ -15,7 +15,7 @@ from face_detection import FaceDetection
 from repositories.photo_repo import PhotoRepository
 from repositories.face_repo import FaceRepository
 from repositories.person_repo import PersonRepository
-from repositories.sys_prefs_repo import SystemPrefsRepository
+from repositories.system_repo import SystemRepository
 from filter_criteria import FilterCriteria
 
 
@@ -25,7 +25,7 @@ class PhotoController:
         self.photo_repo = PhotoRepository(self.db)
         self.face_repo = FaceRepository(self.db)
         self.person_repo = PersonRepository(self.db)
-        self.system_prefs_repo = SystemPrefsRepository(self.db)
+        self.system_repo = SystemRepository(self.db)
 
         self.face_detector = FaceDetection(self.photo_repo, self.face_repo)
         self.face_clustering = FaceClustering(self.face_repo, self.person_repo)
@@ -240,3 +240,6 @@ class PhotoController:
 
     def delete_photo(self, photo_id):
         self.photo_repo.delete_photo(photo_id)
+
+    def wipe_database(self):
+        return self.system_repo.wipe_database()

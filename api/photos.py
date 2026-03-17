@@ -92,7 +92,7 @@ async def open_in_explorer(photo_id: int):
 
 
 @router.post("/export")
-async def export_filtered_photos(
+def export_filtered_photos(
 
     # code duplication
     people: Optional[str] = Query(None),
@@ -133,7 +133,7 @@ async def export_filtered_photos(
     root.destroy()
 
     if not target_dir:
-        return {"status": "error", "message": "Export cancelled"}
+        return {"status": "cancelled"}
 
     count, errors = controller.export_photos(photos, target_dir)
 
