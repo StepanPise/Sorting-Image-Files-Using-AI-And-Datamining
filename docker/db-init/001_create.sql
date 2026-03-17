@@ -12,19 +12,19 @@ CREATE TABLE IF NOT EXISTS photos (
     height INTEGER
 );
 
--- TAGS
-CREATE TABLE IF NOT EXISTS tags (
-    id SERIAL PRIMARY KEY,
-    name TEXT UNIQUE NOT NULL
-);
+-- -- TAGS
+-- CREATE TABLE IF NOT EXISTS tags (
+--     id SERIAL PRIMARY KEY,
+--     name TEXT UNIQUE NOT NULL
+-- );
 
--- Photo <-> Tags (M:N)
-CREATE TABLE IF NOT EXISTS photo_tags (
-    photo_id INTEGER NOT NULL,
-    tag_id INTEGER NOT NULL,
-    FOREIGN KEY (photo_id) REFERENCES photos(id) ON DELETE CASCADE,
-    FOREIGN KEY (tag_id)  REFERENCES tags(id)   ON DELETE CASCADE
-);
+-- -- Photo <-> Tags (M:N)
+-- CREATE TABLE IF NOT EXISTS photo_tags (
+--     photo_id INTEGER NOT NULL,
+--     tag_id INTEGER NOT NULL,
+--     FOREIGN KEY (photo_id) REFERENCES photos(id) ON DELETE CASCADE,
+--     FOREIGN KEY (tag_id)  REFERENCES tags(id)   ON DELETE CASCADE
+-- );
 
 -- PEOPLE
 CREATE TABLE IF NOT EXISTS people (

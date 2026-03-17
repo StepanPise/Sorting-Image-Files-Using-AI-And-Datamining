@@ -15,6 +15,7 @@ from face_detection import FaceDetection
 from repositories.photo_repo import PhotoRepository
 from repositories.face_repo import FaceRepository
 from repositories.person_repo import PersonRepository
+from repositories.sys_prefs_repo import SystemPrefsRepository
 from filter_criteria import FilterCriteria
 
 
@@ -24,6 +25,7 @@ class PhotoController:
         self.photo_repo = PhotoRepository(self.db)
         self.face_repo = FaceRepository(self.db)
         self.person_repo = PersonRepository(self.db)
+        self.system_prefs_repo = SystemPrefsRepository(self.db)
 
         self.face_detector = FaceDetection(self.photo_repo, self.face_repo)
         self.face_clustering = FaceClustering(self.face_repo, self.person_repo)

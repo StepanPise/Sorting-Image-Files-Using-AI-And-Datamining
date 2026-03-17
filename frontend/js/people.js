@@ -40,12 +40,14 @@ async function loadPeople() {
                 togglePersonSelection(person.id, personDiv);
             };
 
+            const displayName = person.name.trim() === "" ? `Person ${person.id}` : person.name;
+
             personDiv.innerHTML = `
                 <div class="w-10 h-10 rounded-full bg-[#2b5c92] flex-shrink-0 overflow-hidden">
                     <img src="/api/people/${person.id}/thumbnail?t=${Date.now()}" class="w-full h-full object-cover" onerror="this.style.display='none'">
                 </div>
                 
-                <input type="text" id="input-${person.id}" value="${person.name}" 
+                <input type="text" id="input-${person.id}" value="${displayName}" 
                        onblur="savePersonName(${person.id}, this)" 
                        onkeydown="if(event.key === 'Enter') { this.blur(); }"
                        class="bg-[#252526] text-sm text-white px-2 py-1.5 rounded border border-gray-600 w-full focus:outline-none focus:border-[#2b5c92] transition">
@@ -96,6 +98,8 @@ async function savePersonName(personId, inputElement) {
         } else {
             console.error("Server returned an error during save.");
         }
+
+        loadPeople();
     } catch (error) {
         console.error("Communication error:", error);
     }

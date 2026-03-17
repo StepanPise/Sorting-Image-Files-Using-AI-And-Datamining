@@ -29,7 +29,13 @@ class PersonRepository(BaseRepository):
                 query += " AND f.photo_id = ANY(%s) "
                 params.append(list(subset_ids))
 
-        query += " GROUP BY p.id, p.name ORDER BY COUNT(DISTINCT f.photo_id) DESC "
+        query += """ 
+                    GROUP BY p.id, p.name 
+                    ORDER BY 
+                        CASE WHEN p.name = '' THEN 1 ELSE 0 END ASC, 
+                        p.name ASC, 
+                        COUNT(DISTINCT f.photo_id) DESC 
+                """
 
         self.cursor.execute(query, tuple(params))
         return self.cursor.fetchall()

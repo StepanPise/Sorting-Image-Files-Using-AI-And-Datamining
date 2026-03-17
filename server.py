@@ -9,6 +9,7 @@ from api.photos import router as photos_router
 from api.locations import router as locations_router
 from api.time import router as time_router
 from api.others import router as others_router
+from api.preferences import router as pref_router
 
 app = FastAPI(title="AI Photo Manager API")
 app.mount("/frontend", StaticFiles(directory="frontend"), name="frontend")
@@ -19,6 +20,7 @@ app.include_router(photos_router)
 app.include_router(locations_router)
 app.include_router(time_router)
 app.include_router(others_router)
+app.include_router(pref_router)
 
 
 @app.get("/", response_class=FileResponse)

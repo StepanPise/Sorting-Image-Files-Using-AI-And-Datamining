@@ -3,37 +3,18 @@ from .base_repo import BaseRepository
 
 class SystemPrefsRepository(BaseRepository):
 
-    def save_pref(self, key, value):
-        self.cursor.execute("""
-            INSERT INTO system_preferences (key, value)
-            VALUES (%s, %s)
-            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
-        """, (key, str(value)))
+    def get_all_preferences(self):
+        self.cursor.execute("SELECT key, value FROM system_preferences")
+        rows = self.cursor.fetchall()
+
+        return {row['key']: row['value'] for row in rows}
+
+    def set_preference(self, key: str, value: str):
+        query = """
+            INSERT INTO system_preferences (key, value) 
+            VALUES (%s, %s) 
+            ON CONFLICT (key) 
+            DO UPDATE SET value = EXCLUDED.value
+        """
+        self.cursor.execute(query, (key, str(value)))
         self.conn.commit()
-
-    def load_pref(self, key, default=None):
-        self.cursor.execute(
-            "SELECT value FROM system_preferences WHERE key=%s", (key,))
-        res = self.cursor.fetchone()
-
-        if res is None:
-            return default
-
-        val = res["value"]
-
-        if val.lower() in ("true", "false"):
-            return val.lower() == "true"
-
-        try:
-            return int(val)
-        except ValueError:
-            try:
-                return float(val)
-            except ValueError:
-                return val
-
-# face_detection_enabled = bool
-# window_width = int
-# window_height = int
-# fullscreen_enabled = bool
-# ....

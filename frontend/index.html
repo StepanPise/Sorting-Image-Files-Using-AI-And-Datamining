@@ -41,7 +41,7 @@
             <input
               type="checkbox"
               id="chk-detect"
-              checked
+              onchange="savePreference('face_detection_enabled', this.checked)"
               class="w-4 h-4 accent-[#2b5c92]"
             />
             <span class="text-sm font-medium">Detect Faces</span>
@@ -50,7 +50,10 @@
             <input
               type="checkbox"
               id="chk-current-folder"
-              onchange="toggleCurrentFolderFilter()"
+              onchange="
+                toggleCurrentFolderFilter();
+                savePreference('use_current_folder_only', this.checked);
+              "
               class="w-4 h-4 accent-[#2b5c92]"
             />
             <span class="text-sm font-medium"
@@ -143,7 +146,10 @@
                 id="min-photos"
                 value="2"
                 min="1"
-                onchange="loadPeople()"
+                onchange="
+                  refreshApp();
+                  savePreference('min_photos_per_person', this.value);
+                "
                 class="w-12 bg-[#1e1e1e] text-white text-xs px-1 py-1 rounded border border-gray-600 focus:outline-none focus:border-[#2b5c92] transition"
               />
             </div>
@@ -279,7 +285,8 @@
     <script src="/frontend/js/others.js"></script>
       -->
     <script>
-      window.addEventListener("DOMContentLoaded", () => {
+      window.addEventListener("DOMContentLoaded", async () => {
+        await loadPreferences();
         refreshApp();
       });
     </script>

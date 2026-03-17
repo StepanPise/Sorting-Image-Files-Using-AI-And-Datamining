@@ -61,7 +61,7 @@ class FaceClustering:
             else:
                 existing_people = self.person_repo.get_all_people_data()
                 next_num = len(existing_people) + 1 if existing_people else 1
-                person_name = f"Person{next_num}"
+                person_name = ""
 
                 dummy_bytes = np.zeros(512, dtype=np.float32).tobytes()
                 final_person_id = self.person_repo.create_person(

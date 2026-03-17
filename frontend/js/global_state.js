@@ -34,3 +34,43 @@ async function resetAllFilters(){
 async function toggleCurrentFolderFilter() {
     await refreshApp();
 }
+
+async function savePreference(key, value) {
+    try {
+        await fetch(`/api/preferences/${key}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ value: String(value) }) 
+        });
+        console.log(`Preference saved: ${key} = ${value}`);
+    } catch (e) {
+        console.error("Failed to save preference:", e);
+    }
+}
+
+async function loadPreferences() {
+    try {
+        const response = await fetch('/api/preferences');
+        const result = await response.json();
+
+        if (result.status === "ok" && result.data) {
+            const prefs = result.data;
+
+            if (prefs['face_detection_enabled'] !== undefined) {
+                document.getElementById('chk-detect').checked = (prefs['face_detection_enabled'] === "true");
+            }
+
+            if (prefs['use_current_folder_only'] !== undefined) {
+                document.getElementById('chk-current-folder').checked = (prefs['use_current_folder_only'] === "true");
+            }
+
+            if (prefs['min_photos_per_person'] !== undefined) {
+                document.getElementById('min-photos').value = prefs['min_photos_per_person'];
+            }
+        }
+    } catch (e) {
+        console.error("Failed to load preferences:", e);
+    }
+}
