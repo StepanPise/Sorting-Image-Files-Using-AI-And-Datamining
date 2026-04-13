@@ -17,8 +17,7 @@ class PersonUpdate(BaseModel):
 @router.get("/")
 async def get_people(min_photos: int = Query(2), use_current_folder: bool = Query(False)):
 
-    subset_ids = list(
-        controller.current_batch_ids) if use_current_folder else None
+    subset_ids = controller.get_current_batch_ids() if use_current_folder else None
 
     filtered_people = controller.get_all_people(
         subset_ids=subset_ids, min_photos=min_photos)

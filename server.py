@@ -15,6 +15,7 @@ from api.system import router as system_router
 app = FastAPI(title="AI Photo Manager API")
 app.mount("/frontend", StaticFiles(directory="frontend"), name="frontend")
 
+
 app.include_router(people_router)
 app.include_router(scanner_router)
 app.include_router(photos_router)

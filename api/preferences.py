@@ -17,7 +17,7 @@ class PreferenceUpdate(BaseModel):
 @router.get("/")
 async def get_preferences():
     try:
-        prefs = controller.system_repo.get_all_preferences()
+        prefs = controller.get_preferences()
         return {"status": "ok", "data": prefs}
     except Exception as e:
         print("GET PREFS ERROR:", e)
@@ -27,7 +27,7 @@ async def get_preferences():
 @router.post("/{key}")
 async def update_preference(key: str, pref: PreferenceUpdate):
     try:
-        controller.system_repo.set_preference(key, pref.value)
+        controller.update_preference(key, pref.value)
         return {"status": "ok"}
     except Exception as e:
         print("SAVE PREFS ERROR:", e)

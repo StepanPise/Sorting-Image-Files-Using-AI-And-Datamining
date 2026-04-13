@@ -222,7 +222,7 @@ class PhotoController:
         return sha256.hexdigest()
 
 # =========================================================================
-#  WRAPPER METODS FOR API
+#  WRAPPER METHODS FOR API
 # =========================================================================
 
     def get_all_people(self, subset_ids=None, min_photos=1):
@@ -243,3 +243,15 @@ class PhotoController:
 
     def wipe_database(self):
         return self.system_repo.wipe_database()
+
+    def get_photo_by_id(self, photo_id):
+        return self.photo_repo.get_by_id(photo_id)
+
+    def get_preferences(self):
+        return self.system_repo.get_all_preferences()
+
+    def update_preference(self, key, value):
+        self.system_repo.set_preference(key, value)
+
+    def get_current_batch_ids(self):
+        return list(self.current_batch_ids)

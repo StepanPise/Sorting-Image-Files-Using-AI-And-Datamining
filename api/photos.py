@@ -36,7 +36,7 @@ async def get_photos(people: Optional[str] = Query(None), country: List[str] = Q
         temp_criteria.date_to = f"{date_to} 23:59:59"
 
     if use_current_folder:
-        temp_criteria.subset_ids = list(controller.current_batch_ids)
+        temp_criteria.subset_ids = controller.get_current_batch_ids()
 
     photos = controller.get_photos_from_repo_for_gallery(temp_criteria)
 
@@ -49,7 +49,7 @@ async def get_photos(people: Optional[str] = Query(None), country: List[str] = Q
 @router.get("/{photo_id}/file")
 async def get_photo_file(photo_id: int):
 
-    photo = controller.photo_repo.get_by_id(photo_id)
+    photo = controller.get_photo_by_id(photo_id)
 
     if not photo or "path" not in photo:
         raise HTTPException(
@@ -73,7 +73,8 @@ async def delete_photo(photo_id: int):
 @router.post("/{photo_id}/open_explorer")
 async def open_in_explorer(photo_id: int):
     try:
-        photo = controller.photo_repo.get_by_id(photo_id)
+        photo = controller.get_photo_by_id(photo_id)
+
         if not photo:
             return {"status": "error", "message": "Photo not found"}
 
@@ -117,7 +118,7 @@ def export_filtered_photos(
         criteria.date_to = f"{date_to} 23:59:59"
 
     if use_current_folder:
-        criteria.subset_ids = list(controller.current_batch_ids)
+        criteria.subset_ids = controller.get_current_batch_ids()
     else:
         criteria.subset_ids = None
 
