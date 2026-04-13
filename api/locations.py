@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Query
-from pydantic import BaseModel
 from api.dependencies import controller
 
 

@@ -79,7 +79,7 @@ async function deleteCurrentPhoto() {
         }
     } catch (e) {
         console.error("Communication error:", e);
-        alert("Server error occurred.");
+        alert("Server error occurred");
     }
 }
 
@@ -95,6 +95,6 @@ async function openInExplorer() {
         }
     } catch (e) {
         console.error("Communication error:", e);
-        alert("Server error occurred.");
+        alert("Server error occurred");
     }
 }

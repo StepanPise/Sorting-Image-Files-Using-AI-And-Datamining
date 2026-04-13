@@ -1,5 +1,4 @@
 import ctypes
-from datetime import datetime
 import os
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
@@ -53,7 +52,7 @@ async def get_photo_file(photo_id: int):
 
     if not photo or "path" not in photo:
         raise HTTPException(
-            status_code=404, detail="Photo not found in database")
+            status_code=404, detail="Photo not found")
 
     file_path = photo["path"]
 
@@ -72,24 +71,21 @@ async def delete_photo(photo_id: int):
 
 @router.post("/{photo_id}/open_explorer")
 async def open_in_explorer(photo_id: int):
-    try:
-        photo = controller.get_photo_by_id(photo_id)
+    photo = controller.get_photo_by_id(photo_id)
 
-        if not photo:
-            return {"status": "error", "message": "Photo not found"}
+    if not photo:
+        raise HTTPException(status_code=404, detail="Photo not found")
 
-        photo_path = os.path.abspath(os.path.normpath(photo['path']))
+    photo_path = os.path.abspath(os.path.normpath(photo['path']))
 
-        # simulates a quick ALT key press and relase to bring folder window to the foregorund
-        ctypes.windll.user32.keybd_event(0x12, 0, 0, 0)
-        ctypes.windll.user32.keybd_event(0x12, 0, 2, 0)
+    # simulates a quick ALT key press and relase to bring folder window to the foregorund
+    ctypes.windll.user32.keybd_event(0x12, 0, 0, 0)
+    ctypes.windll.user32.keybd_event(0x12, 0, 2, 0)
 
-        ctypes.windll.shell32.ShellExecuteW(
-            None, "open", "explorer.exe", f'/select,"{photo_path}"', None, 1)
+    ctypes.windll.shell32.ShellExecuteW(
+        None, "open", "explorer.exe", f'/select,"{photo_path}"', None, 1)
 
-        return {"status": "ok"}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+    return {"status": "ok"}
 
 
 @router.post("/export")
@@ -125,7 +121,8 @@ def export_filtered_photos(
     photos = controller.get_photos_from_repo_for_gallery(criteria)
 
     if not photos:
-        return {"status": "error", "message": "No photos match the current filters."}
+        raise HTTPException(
+            status_code=404, detail="No photos match the current filters")
 
     root = tk.Tk()
     root.withdraw()
@@ -134,7 +131,7 @@ def export_filtered_photos(
     root.destroy()
 
     if not target_dir:
-        return {"status": "cancelled"}
+        return {"status": "cancelled", "message": "No export directory selected"}
 
     count, errors = controller.export_photos(photos, target_dir)
 

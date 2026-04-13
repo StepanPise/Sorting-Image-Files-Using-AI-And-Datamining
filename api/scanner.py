@@ -30,10 +30,6 @@ class ProgressState(BaseModel):
         self.message = f"Processing: {msg}"
 
 
-class ToggleRequest(BaseModel):
-    use_current_folder_only: bool
-
-
 progress_data = ProgressState()
 
 

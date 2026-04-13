@@ -97,6 +97,6 @@ async function wipeDatabase() {
 
     } catch (error) {
         console.error("Communication error during database wipe:", error);
-        alert("Failed to communicate with the server.");
+        alert("Failed to communicate with the server");
     }
 }

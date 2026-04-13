@@ -18,11 +18,11 @@ class FaceDetection:
         # Check if photo exists in DB (not redundant)
         if row is None:
             print(
-                f"Error: Photo with ID {photo_id} ({img_path.name}) was not found in DB. Skipping.")
+                f"Error: Photo with ID {photo_id} ({img_path.name}) was not found in DB. Skipping")
             return
         # Check if photo has already been analyzed to prevent redundant processing
         if row.get("already_analyzed"):
-            print(f"{img_path.name}: Already analyzed, skipping.")
+            print(f"{img_path.name}: Already analyzed, skipping")
             return
 
         try:

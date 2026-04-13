@@ -96,7 +96,7 @@ async function savePersonName(personId, inputElement) {
                 statusIcon.classList.add('opacity-0');
             }, 1500);
         } else {
-            console.error("Server returned an error during save.");
+            console.error("Server returned an error during save");
         }
 
         loadPeople();

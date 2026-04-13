@@ -30,7 +30,7 @@ async def update_person(person_id: int, request: PersonUpdate):
     if request.name is not None:
         controller.update_person_name(person_id, request.name)
         return {"status": "ok"}
-    return {"status": "ignored"}
+    return {"status": "ok", "message": "No changes provided"}
 
 
 @router.get("/{person_id}/thumbnail")

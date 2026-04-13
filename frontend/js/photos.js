@@ -88,7 +88,7 @@ async function exportPhotos() {
 
     } catch (error) {
         console.error("Export error:", error);
-        alert("An error occurred during export.");
+        alert("An error occurred during export");
     } finally {
         btn.innerText = originalText;
         btn.disabled = false;
