@@ -54,21 +54,22 @@ class PhotoController:
                 # 1. Get metadata
                 photo_id = self._scan_metadata(img_path)
 
-                # add current batch photo ids
+                # Current batch ids for subset filtering
                 if photo_id:
                     self.current_batch_ids.add(photo_id)
 
-                # 2. Face detection
+                # 2. Face detection and embedding extraction
                 if detect_faces:
                     self.face_detector.process_photo(img_path, photo_id)
             except Exception as e:
                 print(f"Error processing {img_path}: {e}")
                 self.db.conn.rollback()
 
+            # Progressbar callback
             if callback:
                 callback(i/total_photos, (i/total_photos)*100)
 
-        # 2. Face clustering
+        # 3. Face clustering
         if detect_faces:
             self.face_clustering.resolve_identities()
 

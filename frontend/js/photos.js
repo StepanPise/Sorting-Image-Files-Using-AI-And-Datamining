@@ -16,6 +16,24 @@ async function loadPhotos() {
         if (selectedDateFrom) params.append('date_from', selectedDateFrom);
         if (selectedDateTo) params.append('date_to', selectedDateTo);
 
+// --- NOVÉ FILTRY PRO OTHERS ---
+        if (typeof selectedOrientations !== 'undefined' && selectedOrientations.size > 0) {
+            selectedOrientations.forEach(ori => params.append('orientation', ori));
+        }
+
+        const minW = document.getElementById('input-min-width')?.value;
+        if (minW) params.append('min_width', minW);
+
+        const maxW = document.getElementById('input-max-width')?.value;
+        if (maxW) params.append('max_width', maxW);
+
+        const minH = document.getElementById('input-min-height')?.value;
+        if (minH) params.append('min_height', minH);
+
+        const maxH = document.getElementById('input-max-height')?.value;
+        if (maxH) params.append('max_height', maxH);
+
+
         const url = `/api/photos?${params.toString()}`;
         console.log("Fetching URL:", url);
         
@@ -37,7 +55,8 @@ async function loadPhotos() {
             photoDiv.onclick = () => openLightbox(index, result.data);
 
             photoDiv.innerHTML = `
-                <img src="/api/photos/${photo.id}/file?t=${Date.now()}" loading="lazy" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition">
+                <img src="/api/photos/${photo.id}/file" loading="lazy" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition">
+
             `;
             
             grid.appendChild(photoDiv);
@@ -69,6 +88,25 @@ async function exportPhotos() {
         }
         if (selectedDateFrom) params.append('date_from', selectedDateFrom);
         if (selectedDateTo) params.append('date_to', selectedDateTo);
+
+
+        // --- NOVÉ FILTRY PRO OTHERS ---
+        if (typeof selectedOrientations !== 'undefined' && selectedOrientations.size > 0) {
+            selectedOrientations.forEach(ori => params.append('orientation', ori));
+        }
+
+        const minW = document.getElementById('input-min-width')?.value;
+        if (minW) params.append('min_width', minW);
+
+        const maxW = document.getElementById('input-max-width')?.value;
+        if (maxW) params.append('max_width', maxW);
+
+        const minH = document.getElementById('input-min-height')?.value;
+        if (minH) params.append('min_height', minH);
+
+        const maxH = document.getElementById('input-max-height')?.value;
+        if (maxH) params.append('max_height', maxH);
+
 
         const response = await fetch(`/api/photos/export?${params.toString()}`, {
             method: 'POST'

@@ -27,7 +27,7 @@ async function resetAllFilters(){
     selectedCities = new Set();
 
     clearTimeFilter()
-
+    clearOthersFilter();
     await refreshApp();
 }
 

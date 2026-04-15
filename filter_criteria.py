@@ -21,6 +21,12 @@ class FilterCriteria:
     country: Optional[List[str]] = None
     city: Optional[List[str]] = None
 
+    orientation: List[str] = field(default_factory=list)
+    min_width: Optional[int] = None
+    max_width: Optional[int] = None
+    min_height: Optional[int] = None
+    max_height: Optional[int] = None
+
     def __setattr__(self, name, value):
         super().__setattr__(name, value)
         if name != "__dict__":
@@ -33,6 +39,12 @@ class FilterCriteria:
         self.date_to = None
         self.country = None
         self.city = None
+
+        self.orientation = []
+        self.min_width = None
+        self.max_width = None
+        self.min_height = None
+        self.max_height = None
 
     def _log_state(self):
         print(

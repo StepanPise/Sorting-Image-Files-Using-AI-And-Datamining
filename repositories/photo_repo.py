@@ -102,6 +102,37 @@ class PhotoRepository(BaseRepository):
             conditions.append("p.time_data <= %s")
             params.append(criteria.date_to)
 
+
+# --- ZÁLOŽKA OTHERS: Orientace ---
+        if criteria.orientation:
+            ori_conds = []
+            if 'landscape' in criteria.orientation:
+                ori_conds.append(
+                    "(p.height > 0 AND (p.width::float / p.height) > 1.1)")
+            if 'portrait' in criteria.orientation:
+                ori_conds.append(
+                    "(p.height > 0 AND (p.width::float / p.height) < 0.9)")
+            if 'square' in criteria.orientation:
+                ori_conds.append(
+                    "(p.height > 0 AND (p.width::float / p.height) BETWEEN 0.9 AND 1.1)")
+
+            if ori_conds:
+                conditions.append("(" + " OR ".join(ori_conds) + ")")
+
+        # --- ZÁLOŽKA OTHERS: Rozměry ---
+        if criteria.min_width is not None:
+            conditions.append("p.width >= %s")
+            params.append(criteria.min_width)
+        if criteria.max_width is not None:
+            conditions.append("p.width <= %s")
+            params.append(criteria.max_width)
+        if criteria.min_height is not None:
+            conditions.append("p.height >= %s")
+            params.append(criteria.min_height)
+        if criteria.max_height is not None:
+            conditions.append("p.height <= %s")
+            params.append(criteria.max_height)
+
         if criteria.subset_ids is not None:
             if len(criteria.subset_ids) == 0:
                 conditions.append("1=0")  # returns no reuslts

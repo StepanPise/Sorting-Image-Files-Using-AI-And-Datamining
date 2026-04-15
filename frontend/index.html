@@ -251,14 +251,102 @@
         </div>
 
         <div id="tab-others" class="hidden flex-col flex-1 overflow-hidden">
-          <div class="p-4 border-b border-gray-700 bg-[#2d2d2d]">
-            <h2 class="text-sm font-semibold text-gray-300">Others</h2>
-          </div>
           <div
-            class="flex-1 overflow-y-auto p-4 space-y-1 text-sm"
+            class="p-3 border-b border-gray-700 bg-[#2d2d2d] flex justify-between items-center"
+          >
+            <h2 class="text-sm font-semibold text-gray-300">Others</h2>
+            <button
+              onclick="clearOthersFilter()"
+              class="text-xs bg-[#333333] hover:bg-red-900/40 text-gray-300 hover:text-red-400 border border-gray-600 hover:border-red-500 px-3 py-1 rounded transition font-semibold"
+            >
+              Clear
+            </button>
+          </div>
+
+          <div
+            class="flex-1 overflow-y-auto p-4 space-y-6 text-sm"
             id="others-list"
           >
-            <p class="text-gray-500 text-center mt-10">Loading other...</p>
+            <div>
+              <label class="block text-xs font-bold text-[#2b5c92] mb-2"
+                >ORIENTATION</label
+              >
+              <div class="flex gap-2">
+                <button
+                  id="btn-ori-landscape"
+                  onclick="toggleOrientation('landscape')"
+                  class="flex-1 py-2 bg-[#252526] hover:bg-[#333333] border border-gray-600 rounded text-center transition flex justify-center items-center gap-1 text-gray-300"
+                >
+                  🖼️ <span class="text-xs">Land</span>
+                </button>
+                <button
+                  id="btn-ori-portrait"
+                  onclick="toggleOrientation('portrait')"
+                  class="flex-1 py-2 bg-[#252526] hover:bg-[#333333] border border-gray-600 rounded text-center transition flex justify-center items-center gap-1 text-gray-300"
+                >
+                  📱 <span class="text-xs">Port</span>
+                </button>
+                <button
+                  id="btn-ori-square"
+                  onclick="toggleOrientation('square')"
+                  class="flex-1 py-2 bg-[#252526] hover:bg-[#333333] border border-gray-600 rounded text-center transition flex justify-center items-center gap-1 text-gray-300"
+                >
+                  ⬛ <span class="text-xs">Sq</span>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-[#2b5c92] mb-2"
+                >DIMENSIONS (PX)</label
+              >
+              <div class="space-y-3">
+                <div class="flex items-center gap-2">
+                  <span class="text-gray-400 w-12 text-xs">Width</span>
+                  <input
+                    type="number"
+                    id="input-min-width"
+                    placeholder="Min"
+                    min="0"
+                    step="100"
+                    onchange="refreshApp()"
+                    class="w-full bg-[#252526] text-gray-200 border border-gray-600 rounded p-1.5 focus:outline-none focus:border-[#2b5c92] transition text-xs"
+                  />
+                  <span class="text-gray-500">-</span>
+                  <input
+                    type="number"
+                    id="input-max-width"
+                    placeholder="Max"
+                    min="0"
+                    step="100"
+                    onchange="refreshApp()"
+                    class="w-full bg-[#252526] text-gray-200 border border-gray-600 rounded p-1.5 focus:outline-none focus:border-[#2b5c92] transition text-xs"
+                  />
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-gray-400 w-12 text-xs">Height</span>
+                  <input
+                    type="number"
+                    id="input-min-height"
+                    placeholder="Min"
+                    min="0"
+                    step="100"
+                    onchange="refreshApp()"
+                    class="w-full bg-[#252526] text-gray-200 border border-gray-600 rounded p-1.5 focus:outline-none focus:border-[#2b5c92] transition text-xs"
+                  />
+                  <span class="text-gray-500">-</span>
+                  <input
+                    type="number"
+                    id="input-max-height"
+                    placeholder="Max"
+                    min="0"
+                    step="100"
+                    onchange="refreshApp()"
+                    class="w-full bg-[#252526] text-gray-200 border border-gray-600 rounded p-1.5 focus:outline-none focus:border-[#2b5c92] transition text-xs"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -291,9 +379,9 @@
     <script src="/frontend/js/locations.js"></script>
     <script src="/frontend/js/locations_emoji_list.js"></script>
     <script src="/frontend/js/lightbox.js"></script>
-    <!-- 
+
     <script src="/frontend/js/others.js"></script>
-      -->
+
     <script>
       window.addEventListener("DOMContentLoaded", async () => {
         await loadPreferences();

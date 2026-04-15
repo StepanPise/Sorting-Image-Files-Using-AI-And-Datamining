@@ -45,6 +45,7 @@ async def scan_folder(options: ScanOptions):
     root = tk.Tk()
     root.withdraw()
     root.attributes('-topmost', True)
+    # blocking call to open folder dialog
     folder_path = filedialog.askdirectory(title="Choose photos folder")
     root.destroy()
 

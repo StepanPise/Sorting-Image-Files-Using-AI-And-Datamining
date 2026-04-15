@@ -15,13 +15,23 @@ router = APIRouter(
 
 
 @router.get("/")
-async def get_photos(people: Optional[str] = Query(None), country: List[str] = Query(default=[]),
-                     city: List[str] = Query(default=[]), use_current_folder: bool = Query(False), date_from: Optional[str] = Query(None),
-                     date_to: Optional[str] = Query(None)):
+async def get_photos(
+    people: Optional[str] = Query(None),
+    country: List[str] = Query(default=[]),
+    city: List[str] = Query(default=[]),
+    use_current_folder: bool = Query(False),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+
+    orientation: List[str] = Query(default=[]),
+    min_width: Optional[int] = Query(None),
+    max_width: Optional[int] = Query(None),
+    min_height: Optional[int] = Query(None),
+    max_height: Optional[int] = Query(None)
+):
     temp_criteria = FilterCriteria()
 
     if people:
-        # example = http://127.0.0.1:8000/api/photos?people=1,4,5
         temp_criteria.person_ids = [int(x)
                                     for x in people.split(",") if x.isdigit()]
 
@@ -36,6 +46,12 @@ async def get_photos(people: Optional[str] = Query(None), country: List[str] = Q
 
     if use_current_folder:
         temp_criteria.subset_ids = controller.get_current_batch_ids()
+
+    temp_criteria.orientation = orientation
+    temp_criteria.min_width = min_width
+    temp_criteria.max_width = max_width
+    temp_criteria.min_height = min_height
+    temp_criteria.max_height = max_height
 
     photos = controller.get_photos_from_repo_for_gallery(temp_criteria)
 
@@ -88,16 +104,21 @@ async def open_in_explorer(photo_id: int):
     return {"status": "ok"}
 
 
+# duplication of code
 @router.post("/export")
 def export_filtered_photos(
-
-    # code duplication
     people: Optional[str] = Query(None),
     country: List[str] = Query(default=[]),
     city: List[str] = Query(default=[]),
     use_current_folder: bool = Query(False),
     date_from: Optional[str] = Query(None),
-    date_to: Optional[str] = Query(None)
+    date_to: Optional[str] = Query(None),
+
+    orientation: List[str] = Query(default=[]),
+    min_width: Optional[int] = Query(None),
+    max_width: Optional[int] = Query(None),
+    min_height: Optional[int] = Query(None),
+    max_height: Optional[int] = Query(None)
 ):
     criteria = FilterCriteria()
 
@@ -118,6 +139,12 @@ def export_filtered_photos(
     else:
         criteria.subset_ids = None
 
+    criteria.orientation = orientation
+    criteria.min_width = min_width
+    criteria.max_width = max_width
+    criteria.min_height = min_height
+    criteria.max_height = max_height
+
     photos = controller.get_photos_from_repo_for_gallery(criteria)
 
     if not photos:
@@ -135,7 +162,6 @@ def export_filtered_photos(
 
     count, errors = controller.export_photos(photos, target_dir)
 
-    # Open the target folder after export
     try:
         os.startfile(target_dir)
     except Exception:
