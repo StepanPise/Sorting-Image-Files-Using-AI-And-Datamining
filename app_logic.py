@@ -16,7 +16,6 @@ from repositories.photo_repo import PhotoRepository
 from repositories.face_repo import FaceRepository
 from repositories.person_repo import PersonRepository
 from repositories.system_repo import SystemRepository
-from filter_criteria import FilterCriteria
 
 
 class PhotoController:
@@ -39,7 +38,7 @@ class PhotoController:
 
         image_paths = [
             p for p in input_folder.rglob("*")
-            if p.is_file() and p.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp"]
+            if p.is_file() and p.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp", ".tiff", ".tif"]
         ]
 
         total_photos = len(image_paths)

@@ -34,7 +34,7 @@ function updateLightboxContent() {
     const imgEl = document.getElementById('lightbox-img');
     const infoEl = document.getElementById('lightbox-info');
 
-    imgEl.src = `/api/photos/${photo.id}/file`; 
+    imgEl.src = `/api/photos/${photo.id}/file?t=${Date.now()}`; 
     
     infoEl.innerText = `${photo.filename} | ID: ${photo.id}`;
 }

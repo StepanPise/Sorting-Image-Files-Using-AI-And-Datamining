@@ -5,12 +5,10 @@ function toggleOrientation(type) {
     
     if (selectedOrientations.has(type)) {
         selectedOrientations.delete(type);
-        // Návrat do původní barvy
         btn.classList.remove('bg-[#2b5c92]', 'text-white', 'border-[#3a75b8]');
         btn.classList.add('bg-[#252526]', 'text-gray-300', 'border-gray-600');
     } else {
         selectedOrientations.add(type);
-        // Obarvení na modro
         btn.classList.remove('bg-[#252526]', 'text-gray-300', 'border-gray-600');
         btn.classList.add('bg-[#2b5c92]', 'text-white', 'border-[#3a75b8]');
     }

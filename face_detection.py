@@ -76,4 +76,4 @@ class FaceDetection:
     def _load_models(self) -> None:
         self.face_app = FaceAnalysis(
             name='buffalo_s', allowed_modules=['detection', 'recognition'])
-        self.face_app.prepare(ctx_id=-1, det_size=(640, 640))
+        self.face_app.prepare(ctx_id=-1, det_size=(640, 640), det_thresh=0.65)

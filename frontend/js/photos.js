@@ -16,7 +16,6 @@ async function loadPhotos() {
         if (selectedDateFrom) params.append('date_from', selectedDateFrom);
         if (selectedDateTo) params.append('date_to', selectedDateTo);
 
-// --- NOVÉ FILTRY PRO OTHERS ---
         if (typeof selectedOrientations !== 'undefined' && selectedOrientations.size > 0) {
             selectedOrientations.forEach(ori => params.append('orientation', ori));
         }
@@ -55,7 +54,7 @@ async function loadPhotos() {
             photoDiv.onclick = () => openLightbox(index, result.data);
 
             photoDiv.innerHTML = `
-                <img src="/api/photos/${photo.id}/file" loading="lazy" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition">
+                <img src="/api/photos/${photo.id}/file?t=${Date.now()}" loading="lazy" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition">
 
             `;
             
@@ -90,7 +89,6 @@ async function exportPhotos() {
         if (selectedDateTo) params.append('date_to', selectedDateTo);
 
 
-        // --- NOVÉ FILTRY PRO OTHERS ---
         if (typeof selectedOrientations !== 'undefined' && selectedOrientations.size > 0) {
             selectedOrientations.forEach(ori => params.append('orientation', ori));
         }

@@ -102,8 +102,6 @@ class PhotoRepository(BaseRepository):
             conditions.append("p.time_data <= %s")
             params.append(criteria.date_to)
 
-
-# --- ZÁLOŽKA OTHERS: Orientace ---
         if criteria.orientation:
             ori_conds = []
             if 'landscape' in criteria.orientation:
@@ -119,7 +117,6 @@ class PhotoRepository(BaseRepository):
             if ori_conds:
                 conditions.append("(" + " OR ".join(ori_conds) + ")")
 
-        # --- ZÁLOŽKA OTHERS: Rozměry ---
         if criteria.min_width is not None:
             conditions.append("p.width >= %s")
             params.append(criteria.min_width)
